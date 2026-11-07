@@ -15,7 +15,7 @@ const CSP = [
   "default-src 'self'",
   "script-src 'self' https://challenges.cloudflare.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://*.basemaps.cartocdn.com",
+  "img-src 'self' data: https://tile.openstreetmap.org",
   "connect-src 'self'",
   "frame-src https://challenges.cloudflare.com",
   "object-src 'none'",
@@ -60,6 +60,7 @@ app.get("/api/sightings", (c) => {
   return cached(c, 30, () => listSightings(c.env.DB, limit, nowSec()));
 });
 
+app.get("/api/config", (c) => c.json({ turnstileSiteKey: c.env.TURNSTILE_SITE_KEY }));
 app.get("/api/latest", (c) => cached(c, 30, () => latestSighting(c.env.DB, nowSec())));
 app.get("/api/leaderboard", (c) => cached(c, 300, () => leaderboard(c.env.DB)));
 app.get("/api/heatmap", (c) => cached(c, 300, () => heatmap(c.env.DB)));

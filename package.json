@@ -9,7 +9,7 @@
     "db:local": "wrangler d1 migrations apply graeballs-db --local",
     "seed": "wrangler d1 execute graeballs-db --local --file=scripts/seed.sql",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/web",
     "lint": "eslint .",
     "format": "prettier --write .",
     "deploy": "npm run build && wrangler deploy"
