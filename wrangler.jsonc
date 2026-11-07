@@ -1,5 +1,5 @@
 {
-  "name": "wheres-mc-graeballs",
+  "name": "wheresmcgraeballs-site",
   "main": "src/worker/index.ts",
   "compatibility_date": "2026-08-01",
   "assets": {
