@@ -2,8 +2,6 @@
   "name": "wheresmcgraeballs-site",
   "main": "src/worker/index.ts",
   "compatibility_date": "2026-08-01",
-  // public/ is generated and gitignored, so build it before every deploy/preview.
-  "build": { "command": "npm run build" },
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
