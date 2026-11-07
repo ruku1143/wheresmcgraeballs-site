@@ -9,12 +9,16 @@ import {
 } from "./api";
 import { GraeballsMap } from "./map";
 import { ago } from "./time";
-import type L from "leaflet";
+import L from "leaflet";
+import { BOUNDS } from "../shared/config";
 
 declare global {
   interface Window {
     turnstile?: {
-      render(el: HTMLElement, opts: { sitekey: string; callback: (t: string) => void; "expired-callback": () => void }): string;
+      render(
+        el: HTMLElement,
+        opts: { sitekey: string; callback: (t: string) => void; "expired-callback": () => void },
+      ): string;
       reset(id?: string): void;
     };
   }
@@ -173,6 +177,32 @@ addBtn.addEventListener("click", async () => {
   const ll = await result;
   stopPicking();
   if (ll) await openForm(ll);
+});
+
+$("locate-btn").addEventListener("click", () => {
+  const btn = $<HTMLButtonElement>("locate-btn");
+  if (!navigator.geolocation) return;
+  btn.disabled = true;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      btn.disabled = false;
+      const { latitude: lat, longitude: lng } = pos.coords;
+      const inside =
+        lat >= BOUNDS.south && lat <= BOUNDS.north && lng >= BOUNDS.west && lng <= BOUNDS.east;
+      if (!inside) {
+        alert("You're not in Basingstoke. Tap the map instead.");
+        return;
+      }
+      pickCancel?.();
+      stopPicking();
+      void openForm(L.latLng(lat, lng));
+    },
+    () => {
+      btn.disabled = false;
+      alert("Couldn't get your location. Tap the map instead.");
+    },
+    { enableHighAccuracy: true, timeout: 10_000 },
+  );
 });
 
 $("cancel-btn").addEventListener("click", () => {

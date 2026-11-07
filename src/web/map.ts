@@ -24,10 +24,18 @@ export class GraeballsMap {
 
   constructor(el: HTMLElement) {
     const bounds = L.latLngBounds([BOUNDS.south, BOUNDS.west], [BOUNDS.north, BOUNDS.east]);
-    this.map = L.map(el, { center: CENTRE, zoom: DEFAULT_ZOOM, minZoom: 12, maxBounds: bounds, maxBoundsViscosity: 0.9 });
+    this.map = L.map(el, {
+      center: CENTRE,
+      zoom: DEFAULT_ZOOM,
+      minZoom: 12,
+      maxBounds: bounds,
+      maxBoundsViscosity: 0.9,
+    });
     L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(this.map);
     this.pins.addTo(this.map);
-    L.control.layers(undefined, { Sightings: this.pins, Heatmap: this.heat }, { collapsed: true }).addTo(this.map);
+    L.control
+      .layers(undefined, { Sightings: this.pins, Heatmap: this.heat }, { collapsed: true })
+      .addTo(this.map);
   }
 
   setSightings(list: Sighting[], now: number) {

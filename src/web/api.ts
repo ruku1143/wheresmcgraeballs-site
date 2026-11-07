@@ -27,9 +27,12 @@ async function get<T>(path: string): Promise<T> {
   return data;
 }
 
-export const getSightings = () => get<{ sightings: Sighting[]; status: Status; now: number }>("/api/sightings?limit=200");
-export const getLatest = () => get<{ sighting: Sighting | null; status: Status; now: number }>("/api/latest");
-export const getLeaderboard = () => get<{ leaderboard: { nickname: string; sightings: number }[] }>("/api/leaderboard");
+export const getSightings = () =>
+  get<{ sightings: Sighting[]; status: Status; now: number }>("/api/sightings?limit=200");
+export const getLatest = () =>
+  get<{ sighting: Sighting | null; status: Status; now: number }>("/api/latest");
+export const getLeaderboard = () =>
+  get<{ leaderboard: { nickname: string; sightings: number }[] }>("/api/leaderboard");
 export const getHeatmap = () => get<{ points: [number, number][] }>("/api/heatmap");
 export const getConfig = () => get<{ turnstileSiteKey: string }>("/api/config");
 
