@@ -24,7 +24,7 @@ The local `wrangler.jsonc` uses Cloudflare's always-pass Turnstile **test site k
 2. Create a Turnstile widget for the domain. Put the site key in `vars.TURNSTILE_SITE_KEY`.
 3. `npx wrangler d1 create graeballs-db`, then put the `database_id` in `wrangler.jsonc`.
 4. Secrets: `npx wrangler secret put TURNSTILE_SECRET`, `ADMIN_TOKEN`, `IP_HASH_SALT`.
-5. Uncomment the `routes` block in `wrangler.jsonc` for the custom domains.
+5. Custom domains are configured in the `routes` block of `wrangler.jsonc` (the zone must be on Cloudflare).
 6. GitHub repo secrets `CLOUDFLARE_API_TOKEN` (Workers + D1 edit) and `CLOUDFLARE_ACCOUNT_ID`. Pushes to `main` then test, migrate and deploy via `.github/workflows/deploy.yml`.
 
 If you use Cloudflare Workers Builds instead, set the build command to `npm run build` and the Worker name to match `name` in `wrangler.jsonc`.

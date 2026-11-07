@@ -17,10 +17,9 @@
     }
   ],
   "vars": { "TURNSTILE_SITE_KEY": "1x00000000000000000000AA" },
-  "observability": { "enabled": true }
-  // Custom domains are added at deploy time (see README):
-  // "routes": [
-  //   { "pattern": "wheresmcgraeballs.co.uk", "custom_domain": true },
-  //   { "pattern": "www.wheresmcgraeballs.co.uk", "custom_domain": true }
-  // ]
+  "observability": { "enabled": true },
+  "routes": [
+    { "pattern": "wheresmcgraeballs.co.uk", "custom_domain": true },
+    { "pattern": "www.wheresmcgraeballs.co.uk", "custom_domain": true }
+  ]
 }
