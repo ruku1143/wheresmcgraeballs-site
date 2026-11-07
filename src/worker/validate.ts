@@ -9,7 +9,7 @@ export interface SightingInput {
   nickname: string | null;
 }
 
-// eslint-disable-next-line no-control-regex
+ 
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
 const BLOCKED = ["fuck", "shit", "cunt", "nigger", "paedo", "kill yourself"];
 
