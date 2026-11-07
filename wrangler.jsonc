@@ -16,8 +16,23 @@
       "migrations_dir": "migrations"
     }
   ],
-  "vars": { "TURNSTILE_SITE_KEY": "1x00000000000000000000AA" },
-  "observability": { "enabled": true },
+  "vars": { "TURNSTILE_SITE_KEY": "0x4AAAAAAF4NupKEQYUMdVWF" },
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true },
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 },
+    "issues": { "enabled": true }
+  },
+  // Used by `wrangler preview` (Workers Builds PR previews). Separate DB so previews never touch real sightings.
+  "previews": {
+    "vars": { "TURNSTILE_SITE_KEY": "0x4AAAAAAF4NupKEQYUMdVWF" },
+    "d1_databases": [{ "binding": "DB", "database_id": "2e96f609-fe81-41ca-9583-2a4c4f092faf" }],
+    "observability": {
+      "enabled": true,
+      "logs": { "enabled": true, "invocation_logs": true },
+      "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+    }
+  },
   "routes": [
     { "pattern": "wheresmcgraeballs.co.uk", "custom_domain": true },
     { "pattern": "www.wheresmcgraeballs.co.uk", "custom_domain": true }

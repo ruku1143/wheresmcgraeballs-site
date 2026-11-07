@@ -16,7 +16,7 @@ npm run dev                      # build + wrangler dev on http://localhost:8787
 
 Checks: `npm run lint`, `npm run typecheck`, `npm test`.
 
-The local `wrangler.jsonc` uses Cloudflare's always-pass Turnstile **test site key**. Replace `TURNSTILE_SITE_KEY` with your real key for production.
+`wrangler.jsonc` holds the real (public) Turnstile site key. For local dev, `.dev.vars.example` uses the always-pass test secret, which only works with the matching test site key `1x00000000000000000000AA`.
 
 ## Deploy (manual steps)
 
@@ -48,3 +48,7 @@ Caches expire within 30s (sightings) or 5 minutes (heatmap, leaderboard).
 
 - Basemap is standard OpenStreetMap tiles (CARTO now requires an API key). Change `TILE_URL` in `src/web/map.ts` and the CSP `img-src` in `src/web/static/_headers` and `src/worker/index.ts` to swap. Be kind to OSM's volunteer servers.
 - IP addresses are stored only as salted SHA-256 hashes, for rate limiting.
+
+## Observability
+
+`wrangler.jsonc` enables Workers Logs (with invocation logs), Traces (10% sampling) and Issues, for both production and previews. From 1 Dec 2026 persisted logs/traces count toward Cloudflare Observability usage, so check the Free allowance and lower `head_sampling_rate` or set `persist: false` if you need to stay at $0.
