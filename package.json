@@ -1,0 +1,35 @@
+{
+  "name": "wheres-mc-graeballs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run build && npm run db:local && wrangler dev",
+    "dev:web": "vite",
+    "build": "vite build",
+    "db:local": "wrangler d1 migrations apply graeballs-db --local",
+    "seed": "wrangler d1 execute graeballs-db --local --file=scripts/seed.sql",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p src/web",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "dependencies": {
+    "hono": "^4.13.17",
+    "leaflet": "^1.9.4",
+    "leaflet.heat": "^0.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.23.0",
+    "@cloudflare/workers-types": "^5.20261107.1",
+    "@types/leaflet": "^1.9.22",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
+    "vite": "^8.3.6",
+    "vitest": "~4.1.0",
+    "wrangler": "^4.158.0"
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "name": "wheresmcgraeballs-site",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-08-01",
+  // public/ is generated and gitignored, so build it before every deploy/preview.
+  "build": { "command": "npm run build" },
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "graeballs-db",
+      "database_id": "dc45477f-5bb9-4e4e-b773-050554327749",
+      "migrations_dir": "migrations"
+    }
+  ],
+  "vars": { "TURNSTILE_SITE_KEY": "0x4AAAAAAF4NupKEQYUMdVWF" },
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true },
+    "traces": { "enabled": true, "head_sampling_rate": 0.1 },
+    "issues": { "enabled": true }
+  },
+  // Used by `wrangler preview` (Workers Builds PR previews). Separate DB so previews never touch real sightings.
+  "previews": {
+    "vars": { "TURNSTILE_SITE_KEY": "0x4AAAAAAF4NupKEQYUMdVWF" },
+    "d1_databases": [{ "binding": "DB", "database_id": "2e96f609-fe81-41ca-9583-2a4c4f092faf" }],
+    "observability": {
+      "enabled": true,
+      "logs": { "enabled": true, "invocation_logs": true },
+      "traces": { "enabled": true, "head_sampling_rate": 0.1 }
+    }
+  },
+  "routes": [
+    { "pattern": "wheresmcgraeballs.co.uk", "custom_domain": true },
+    { "pattern": "www.wheresmcgraeballs.co.uk", "custom_domain": true }
+  ]
+}

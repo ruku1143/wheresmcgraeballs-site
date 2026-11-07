@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Where's MC Graeballs?</title>
+    <meta
+      name="description"
+      content="Spotted MC Graeballs in Basingstoke? Drop a pin. It's a joke."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🎤%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header id="banner" class="banner" aria-live="polite">
+      <h1>Where's MC Graeballs?</h1>
+      <p id="banner-text">Looking for him…</p>
+    </header>
+    <main>
+      <div id="map" aria-label="Map of Basingstoke"></div>
+      <div id="hint" class="hint" hidden>
+        <span>Tap the map where you saw him</span>
+        <button id="locate-btn" class="btn secondary small" type="button">
+          📍 Use my location
+        </button>
+      </div>
+      <div class="fabs">
+        <button id="board-btn" class="btn secondary" type="button">🏆 Spotters</button>
+        <button id="add-btn" class="btn primary" type="button">I saw him!</button>
+      </div>
+    </main>
+
+    <dialog id="form-dialog">
+      <form id="sighting-form" method="dialog">
+        <h2>Sighting</h2>
+        <label
+          >What was he up to?
+          <select name="activity" required></select>
+        </label>
+        <label
+          >Where, roughly? <small>(optional)</small>
+          <input name="place_name" maxlength="60" autocomplete="off" />
+        </label>
+        <label
+          >Note <small>(optional)</small>
+          <input name="note" maxlength="140" autocomplete="off" />
+        </label>
+        <label
+          >Your spotter name <small>(optional)</small>
+          <input name="nickname" maxlength="24" autocomplete="off" />
+        </label>
+        <div id="turnstile"></div>
+        <p id="form-msg" class="msg" role="status"></p>
+        <div class="row">
+          <button type="button" id="cancel-btn" class="btn secondary">Cancel</button>
+          <button type="submit" id="submit-btn" class="btn primary">Submit</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="board-dialog">
+      <h2>Top spotters</h2>
+      <ol id="board-list"></ol>
+      <button type="button" id="board-close" class="btn secondary">Close</button>
+    </dialog>
+
+    <footer>
+      <p>It's a joke. MC Graeballs is fictional. Don't be weird.</p>
+      <p>
+        Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. IP
+        addresses are stored only as salted hashes, for rate limiting.
+      </p>
+    </footer>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
