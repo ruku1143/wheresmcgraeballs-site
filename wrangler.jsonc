@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "graeballs-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "dc45477f-5bb9-4e4e-b773-050554327749",
       "migrations_dir": "migrations"
     }
   ],
