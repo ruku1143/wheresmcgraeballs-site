@@ -27,7 +27,7 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`.
 5. Custom domains are configured in the `routes` block of `wrangler.jsonc` (the zone must be on Cloudflare).
 6. GitHub repo secrets `CLOUDFLARE_API_TOKEN` (Workers + D1 edit) and `CLOUDFLARE_ACCOUNT_ID`. Pushes to `main` then test, migrate and deploy via `.github/workflows/deploy.yml`.
 
-Workers Builds must have its **Build command** set to `npm run build` (in the dashboard), because `public/` is generated and gitignored. The Worker name must match `name` in `wrangler.jsonc`.
+If you use Cloudflare Workers Builds instead, set the build command to `npm run build` and the Worker name to match `name` in `wrangler.jsonc`.
 
 ## Hide a sighting
 
