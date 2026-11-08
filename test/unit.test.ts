@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { spotterName } from "../src/shared/display";
+import { placeFromAddress } from "../src/worker/geocode";
 import { computeStatus, isRecent } from "../src/shared/status";
 import { clean, inBounds, validateSighting } from "../src/worker/validate";
 
@@ -83,5 +84,43 @@ describe("recent pings and spotter names", () => {
     expect(spotterName(undefined)).toBe("(anonymous)");
     expect(spotterName("   ")).toBe("(anonymous)");
     expect(spotterName("Dazza")).toBe("Dazza");
+  });
+});
+
+describe("placeFromAddress", () => {
+  it("gives road and area", () => {
+    expect(
+      placeFromAddress({ road: "Telford Road", suburb: "Houndmills", town: "Basingstoke" }),
+    ).toBe("Telford Road, Houndmills");
+  });
+  it("never includes house numbers, buildings or named places", () => {
+    expect(
+      placeFromAddress({
+        house_number: "14",
+        building: "Some House",
+        amenity: "The Crown",
+        road: "Winchester Road",
+        suburb: "Kingsclere",
+      }),
+    ).toBe("Winchester Road, Kingsclere");
+  });
+  it("falls back sensibly", () => {
+    expect(placeFromAddress({ road: "Church Lane", village: "Old Basing" })).toBe(
+      "Church Lane, Old Basing",
+    );
+    expect(placeFromAddress({ road: "Church Lane" })).toBe("Church Lane");
+    expect(placeFromAddress({ neighbourhood: "Popley" })).toBe("Popley");
+    expect(placeFromAddress({ footway: "Riverside Path", town: "Basingstoke" })).toBe(
+      "Riverside Path, Basingstoke",
+    );
+  });
+  it("collapses a road named the same as its area, and handles nothing usable", () => {
+    expect(placeFromAddress({ road: "Chineham", suburb: "chineham" })).toBe("Chineham");
+    expect(placeFromAddress({})).toBeNull();
+    expect(placeFromAddress(null)).toBeNull();
+    expect(placeFromAddress({ county: "Hampshire", house_number: "3" })).toBeNull();
+  });
+  it("caps the length", () => {
+    expect(placeFromAddress({ road: "x".repeat(200) })?.length).toBe(60);
   });
 });

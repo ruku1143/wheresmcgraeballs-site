@@ -2,6 +2,10 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
+## 0.4.0
+
+- The "Near:" place is now filled in automatically from where the pin was dropped, as the road name and area (for example "Telford Road, Houndmills"), never a house number or building. The free-text "Where, roughly?" field is gone. The lookup happens on the server using OpenStreetMap Nominatim, and a failed lookup just leaves the place blank. Older sightings keep the text they were given.
+
 ## 0.3.1
 
 - Add a CI workflow (`.github/workflows/ci.yml`): lint, typecheck, tests and build on every PR and push to `main`, plus a check that each PR bumps the version and adds a changelog entry.
