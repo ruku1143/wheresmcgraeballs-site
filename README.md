@@ -25,9 +25,13 @@ Checks: `npm run lint`, `npm run typecheck`, `npm test`.
 3. `npx wrangler d1 create graeballs-db`, then put the `database_id` in `wrangler.jsonc`.
 4. Secrets: `npx wrangler secret put TURNSTILE_SECRET`, `ADMIN_TOKEN`, `IP_HASH_SALT`.
 5. Custom domains are configured in the `routes` block of `wrangler.jsonc` (the zone must be on Cloudflare).
-6. GitHub repo secrets `CLOUDFLARE_API_TOKEN` (Workers + D1 edit) and `CLOUDFLARE_ACCOUNT_ID`. Pushes to `main` then test, migrate and deploy via `.github/workflows/deploy.yml`.
+6. Deploys happen through **Cloudflare Workers Builds** (connect this repo to the Worker). Set its **Build command** to `npm run build`, with deploy command `npx wrangler deploy` and non-production branch command `npx wrangler preview`. The Worker name must match `name` in `wrangler.jsonc`.
 
-If you use Cloudflare Workers Builds instead, set the build command to `npm run build` and the Worker name to match `name` in `wrangler.jsonc`.
+Migrations are not run by deploys: apply new ones to both D1 databases yourself (see `CLAUDE.md`).
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request and on pushes to `main`: lint, typecheck, tests and build, plus (on PRs) a check that the version in `package.json` was bumped and has a `CHANGELOG.md` entry. It uses only GitHub's own actions and needs no secrets.
 
 ## Hide a sighting
 
