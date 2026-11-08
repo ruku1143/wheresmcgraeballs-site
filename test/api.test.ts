@@ -2,9 +2,17 @@ import { env } from "cloudflare:workers";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import app from "../src/worker/index";
 
-const ctx = { waitUntil() {}, passThroughOnException() {} } as unknown as ExecutionContext;
-const call = (path: string, init?: RequestInit) =>
-  app.fetch(new Request(`https://example.com${path}`, init), env as never, ctx);
+// Await anything the Worker hands to waitUntil (cache writes) so tests are deterministic.
+const call = async (path: string, init?: RequestInit) => {
+  const pending: Promise<unknown>[] = [];
+  const ctx = {
+    waitUntil: (p: Promise<unknown>) => void pending.push(p),
+    passThroughOnException() {},
+  } as unknown as ExecutionContext;
+  const res = await app.fetch(new Request(`https://example.com${path}`, init), env as never, ctx);
+  await Promise.all(pending);
+  return res;
+};
 
 const post = (body: object, ip = "1.1.1.1") =>
   call("/api/sightings", {
@@ -90,6 +98,46 @@ describe("spotted_at", () => {
     await post({ spotted_at: now() - 3 * 86400 });
     const latest = (await (await call("/api/latest?x=old")).json()) as { status: { key: string } };
     expect(latest.status.key).toBe("cold");
+  });
+});
+
+describe("live updates", () => {
+  const URL_ = "/api/sightings?limit=200";
+  const notes = async () =>
+    ((await (await call(URL_)).json()) as { sightings: { note: string }[] }).sightings.map(
+      (s) => s.note,
+    );
+
+  it("tells browsers never to cache reads", async () => {
+    for (const path of [
+      "/api/sightings?limit=200",
+      "/api/latest",
+      "/api/heatmap",
+      "/api/leaderboard",
+    ]) {
+      const first = await call(path);
+      expect(first.headers.get("Cache-Control"), path).toBe("no-cache");
+      const second = await call(path); // served from the edge cache
+      expect(second.headers.get("Cache-Control"), path).toBe("no-cache");
+    }
+  });
+
+  it("shows a new sighting on the very next read of the same URL", async () => {
+    expect(await notes()).toEqual([]); // primes the edge cache with an empty list
+    expect((await post({ note: "fresh" })).status).toBe(201);
+    expect(await notes()).toEqual(["fresh"]);
+  });
+
+  it("drops a hidden sighting on the very next read", async () => {
+    const created = (await (await post({ note: "gone soon" })).json()) as {
+      sighting: { id: number };
+    };
+    expect(await notes()).toEqual(["gone soon"]);
+    await call(`/api/admin/hide/${created.sighting.id}`, {
+      method: "POST",
+      headers: { Authorization: "Bearer test-admin" },
+    });
+    expect(await notes()).toEqual([]);
   });
 });
 

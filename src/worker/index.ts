@@ -39,31 +39,62 @@ app.use("*", async (c, next) => {
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 
-/** Run a D1-backed read with edge caching and a friendly failure message. */
+/** Edge cache lifetimes in seconds. Short, so new sightings feel live. */
+const TTL = { sightings: 10, rollups: 60 } as const;
+
+const edgeCache = () => (caches as unknown as { default: Cache }).default;
+
+/** Browsers must always ask us again; only our own short-lived edge cache protects D1. */
+function forBrowser(res: Response): Response {
+  const r = new Response(res.body, res);
+  r.headers.set("Cache-Control", "no-cache");
+  return r;
+}
+
+/** Run a D1-backed read through a short edge cache, with a friendly failure message. */
 async function cached(c: Context<{ Bindings: Env }>, ttl: number, produce: () => Promise<unknown>) {
-  const cache = (caches as unknown as { default: Cache }).default;
+  const cache = edgeCache();
   const key = new Request(c.req.url, { method: "GET" });
   const hit = await cache.match(key);
-  if (hit) return hit;
+  if (hit) return forBrowser(hit);
   try {
-    const res = c.json(await produce());
-    res.headers.set("Cache-Control", `public, max-age=${ttl}`);
-    c.executionCtx.waitUntil(cache.put(key, res.clone()));
-    return res;
+    const body = JSON.stringify(await produce());
+    const stored = new Response(body, {
+      headers: { "Content-Type": "application/json", "Cache-Control": `public, max-age=${ttl}` },
+    });
+    c.executionCtx.waitUntil(cache.put(key, stored));
+    return forBrowser(new Response(body, { headers: { "Content-Type": "application/json" } }));
   } catch {
     return c.json({ error: FRIENDLY_DB_ERROR }, 503);
   }
 }
 
+/** Drop this data centre's cached reads so a write shows up straight away. Other data centres expire within the TTL. */
+async function purgeReads(c: Context<{ Bindings: Env }>) {
+  const origin = new URL(c.req.url).origin;
+  const paths = [
+    "/api/sightings?limit=200",
+    "/api/sightings",
+    "/api/latest",
+    "/api/heatmap",
+    "/api/leaderboard",
+  ];
+  try {
+    await Promise.all(paths.map((p) => edgeCache().delete(new Request(origin + p))));
+  } catch {
+    /* best effort */
+  }
+}
+
 app.get("/api/sightings", (c) => {
   const limit = Math.min(Math.max(parseInt(c.req.query("limit") ?? "200", 10) || 200, 1), 500);
-  return cached(c, 30, () => listSightings(c.env.DB, limit, nowSec()));
+  return cached(c, TTL.sightings, () => listSightings(c.env.DB, limit, nowSec()));
 });
 
 app.get("/api/config", (c) => c.json({ turnstileSiteKey: c.env.TURNSTILE_SITE_KEY }));
-app.get("/api/latest", (c) => cached(c, 30, () => latestSighting(c.env.DB, nowSec())));
-app.get("/api/leaderboard", (c) => cached(c, 300, () => leaderboard(c.env.DB)));
-app.get("/api/heatmap", (c) => cached(c, 300, () => heatmap(c.env.DB)));
+app.get("/api/latest", (c) => cached(c, TTL.sightings, () => latestSighting(c.env.DB, nowSec())));
+app.get("/api/leaderboard", (c) => cached(c, TTL.rollups, () => leaderboard(c.env.DB)));
+app.get("/api/heatmap", (c) => cached(c, TTL.rollups, () => heatmap(c.env.DB)));
 
 app.post("/api/sightings", async (c) => {
   let body: unknown;
@@ -74,6 +105,7 @@ app.post("/api/sightings", async (c) => {
   }
   try {
     const r = await createSighting(c.env, body, c.req.header("CF-Connecting-IP") ?? null, nowSec());
+    if (r.status === 201) await purgeReads(c);
     return c.json(r.json as object, r.status as 201);
   } catch {
     return c.json({ error: FRIENDLY_DB_ERROR }, 503);
@@ -99,7 +131,7 @@ async function setHidden(c: Context<{ Bindings: Env }>, hidden: 0 | 1) {
     const r = await c.env.DB.prepare("UPDATE sightings SET hidden = ?1 WHERE id = ?2")
       .bind(hidden, id)
       .run();
-    // Purge nothing: caches expire within 30s/5min.
+    await purgeReads(c);
     return c.json({ ok: true, changed: r.meta.changes });
   } catch {
     return c.json({ error: FRIENDLY_DB_ERROR }, 503);
