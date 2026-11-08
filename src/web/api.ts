@@ -1,3 +1,5 @@
+import { SIGHTINGS_LIMIT } from "../shared/config";
+import { FRIENDLY_DB_ERROR } from "../shared/display";
 import type { Status } from "../shared/status";
 
 export interface Sighting {
@@ -24,12 +26,14 @@ export interface NewSighting {
 async function get<T>(path: string): Promise<T> {
   const res = await fetch(path, { cache: "no-store" });
   const data = (await res.json().catch(() => ({}))) as T & { error?: string };
-  if (!res.ok) throw new Error(data.error ?? "Graeballs is resting, try again tomorrow.");
+  if (!res.ok) throw new Error(data.error ?? FRIENDLY_DB_ERROR);
   return data;
 }
 
 export const getSightings = () =>
-  get<{ sightings: Sighting[]; status: Status; now: number }>("/api/sightings?limit=200");
+  get<{ sightings: Sighting[]; status: Status; now: number }>(
+    `/api/sightings?limit=${SIGHTINGS_LIMIT}`,
+  );
 export const getLatest = () =>
   get<{ sighting: Sighting | null; status: Status; now: number }>("/api/latest");
 export const getLeaderboard = () =>

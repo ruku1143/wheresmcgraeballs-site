@@ -12,10 +12,13 @@ export async function verifyTurnstile(
     const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
       method: "POST",
       body: form,
+      signal: AbortSignal.timeout(5000),
     });
+    if (!res.ok) return false;
     const data = (await res.json()) as { success?: boolean };
     return data.success === true;
-  } catch {
+  } catch (e) {
+    console.warn("turnstile verify error", e);
     return false;
   }
 }

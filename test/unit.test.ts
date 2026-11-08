@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { spotterName } from "../src/shared/display";
 import { placeFromAddress } from "../src/worker/geocode";
 import { computeStatus, isRecent } from "../src/shared/status";
-import { clean, inBounds, validateSighting } from "../src/worker/validate";
+import { clean, containsBlocked, inBounds, validateSighting } from "../src/worker/validate";
 
 const NOW = 1_800_000_000;
 
@@ -123,4 +123,23 @@ describe("placeFromAddress", () => {
   it("caps the length", () => {
     expect(placeFromAddress({ road: "x".repeat(200) })?.length).toBe(60);
   });
+});
+
+describe("blocked words", () => {
+  it.each([
+    "what the fuck",
+    "FUCKING hell",
+    "shitting it",
+    "Kill Yourself",
+    "you motherfucker",
+    "bullshit",
+  ])("blocks %s", (s) => expect(containsBlocked(s)).toBe(true));
+  it.each([
+    "Scunthorpe",
+    "lost in Scunthorpe",
+    "Penistone",
+    "on the mic",
+    "the mishit",
+    "shiitake",
+  ])("allows %s", (s) => expect(containsBlocked(s)).toBe(false));
 });

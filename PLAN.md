@@ -11,26 +11,27 @@ A joke "Where's Wally" style tracker. Locals open the site, drop a "last seen" p
 
 ## 1. Decisions already made
 
-| Topic | Decision |
-|---|---|
-| Map | Real map: Leaflet + tiles, Basingstoke-centred and bounded |
-| Look | Clean and minimal. The joke carries the site, not heavy theming |
-| Anti-abuse | Cloudflare Turnstile + per-IP rate limiting. Sightings go live instantly |
+| Topic       | Decision                                                                               |
+| ----------- | -------------------------------------------------------------------------------------- |
+| Map         | Real map: Leaflet + tiles, Basingstoke-centred and bounded                             |
+| Look        | Clean and minimal. The joke carries the site, not heavy theming                        |
+| Anti-abuse  | Cloudflare Turnstile + per-IP rate limiting. Sightings go live instantly               |
 | v1 features | Last-seen banner with status, sighting details (activity + note), leaderboard, heatmap |
-| Not in v1 | Photo uploads (would need R2 plus moderation), user accounts |
+| Not in v1   | Photo uploads (would need R2 plus moderation), user accounts                           |
 
 ## 2. Storage: why D1
 
-| Option | Verdict |
-|---|---|
+| Option          | Verdict                                                                                                                                                                                                                                         |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **D1 (SQLite)** | **Use this.** It is relational, queryable (latest sighting, leaderboard, heatmap) and consistent. Free plan: 5M rows read/day, 100k rows written/day, 5 GB storage, 500 MB per database. This is far beyond what a joke site for friends needs. |
-| Workers KV | No. Only 1,000 writes/day, eventually consistent, and no queries. |
-| R2 | Not needed until photo uploads exist. |
-| Durable Objects | Overkill. Real-time push isn't needed. Polling every 60s is fine. |
+| Workers KV      | No. Only 1,000 writes/day, eventually consistent, and no queries.                                                                                                                                                                               |
+| R2              | Not needed until photo uploads exist.                                                                                                                                                                                                           |
+| Durable Objects | Overkill. Real-time push isn't needed. Polling every 60s is fine.                                                                                                                                                                               |
 
 Notes for the implementer:
+
 - Since 1 Sept 2026, D1 queries on the Free plan **fail** once the daily row limits are exceeded. The API must catch D1 errors and return a friendly "Graeballs is hiding, try later" response instead of a 500 stack trace.
-- Rows-read counts rows *scanned*, so add indexes and always use `LIMIT`.
+- Rows-read counts rows _scanned_, so add indexes and always use `LIMIT`.
 - Cache `GET /api/sightings` at the edge for ~30s (`caches.default`) to protect read quota and speed things up.
 - Static asset requests to Workers are free, so only `/api/*` calls count towards the 100k requests/day Worker limit.
 
@@ -39,6 +40,7 @@ Notes for the implementer:
 Everything must run on the **Workers Free plan with no payment method attached**. On Free, hitting a limit makes requests fail. It never bills. Don't add anything that needs the $5 Workers Paid plan.
 
 **Allowed (all free):**
+
 - Workers (Free): 100k requests/day, 10 ms CPU per invocation. Awaiting `fetch()` to Turnstile doesn't count as CPU time. Keep JSON work small.
 - Workers Static Assets: static file requests are free.
 - D1 (Free): limits in §2.
@@ -49,12 +51,14 @@ Everything must run on the **Workers Free plan with no payment method attached**
 - Free universal SSL.
 
 **Do NOT use:**
+
 - R2: needs a payment method on file even for its free tier, so there are no photo uploads in v1.
 - Durable Objects, Queues, Hyperdrive, Workers AI, Images, Logpush, Workers Paid-only features.
 - The Workers Rate Limiting binding. Rate limit with D1 as specified in §5 instead.
 - Cloudflare Web Analytics or WAF rate-limiting rules beyond what the free zone already includes.
 
 **Design for the limits:**
+
 - Cap CPU per request: no heavy loops, no big JSON transforms. The `limit` caps in §5 and the edge caching exist for this reason.
 - Prune old data: a daily Cron Trigger (Cron Triggers are free) deleting rows older than 12 months, or keep it simple and skip pruning because 500 MB is enormous for this.
 - On D1 or Worker limit errors, show a friendly "Graeballs is resting, try again tomorrow" message.
@@ -114,17 +118,20 @@ CREATE TABLE sightings (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   lat         REAL    NOT NULL,
   lng         REAL    NOT NULL,
-  place_name  TEXT,                    -- optional, user supplied, max 60 chars
+  place_name  TEXT,                    -- road and area, looked up server-side from the pin (max 60 chars)
   activity    TEXT    NOT NULL,        -- one of the fixed enum values below
   note        TEXT,                    -- optional, max 140 chars
   nickname    TEXT,                    -- optional spotter name, max 24 chars
-  created_at  INTEGER NOT NULL,        -- unix seconds, UTC
+  created_at  INTEGER NOT NULL,        -- unix seconds, UTC, insert time (rate limiting)
   ip_hash     TEXT    NOT NULL,        -- salted SHA-256, never raw IP
-  hidden      INTEGER NOT NULL DEFAULT 0
+  hidden      INTEGER NOT NULL DEFAULT 0,
+  spotted_at  INTEGER NOT NULL DEFAULT 0 -- when it happened (user supplied, never in the future)
 );
-CREATE INDEX idx_sightings_visible_time ON sightings (hidden, created_at DESC);
-CREATE INDEX idx_sightings_nickname     ON sightings (nickname) WHERE hidden = 0;
-CREATE INDEX idx_sightings_ip_time      ON sightings (ip_hash, created_at);
+-- Current indexes, after migrations/0003_index_cleanup.sql:
+CREATE INDEX idx_sightings_visible_spotted ON sightings (hidden, spotted_at DESC);
+CREATE INDEX IF NOT EXISTS idx_sightings_nickname_nocase ON sightings (nickname COLLATE NOCASE)
+  WHERE hidden = 0 AND nickname IS NOT NULL;
+CREATE INDEX idx_sightings_ip_time         ON sightings (ip_hash, created_at);
 ```
 
 **Activity enum** (dropdown, validated server-side, easy to extend):
@@ -135,17 +142,21 @@ CREATE INDEX idx_sightings_ip_time      ON sightings (ip_hash, created_at);
 All responses are JSON. All writes validate server-side.
 
 ### `GET /api/sightings?limit=200`
+
 - Returns non-hidden sightings, newest first, with `limit` capped at 500.
 - Response includes the server-calculated `status` so the client and server never disagree.
 - Edge-cached for ~30s.
 
 ### `GET /api/latest`
+
 Returns the most recent sighting plus its computed status, for the banner.
 
 ### `POST /api/sightings`
+
 Body: `{ lat, lng, place_name?, activity, note?, nickname?, turnstileToken }`
 
 Server steps, in order:
+
 1. Verify the Turnstile token with `https://challenges.cloudflare.com/turnstile/v0/siteverify` using the `TURNSTILE_SECRET` secret and the `CF-Connecting-IP` header. Reject on failure.
 2. Rate limit by `ip_hash`: max **3 sightings per 10 minutes** and **20 per day**. Count rows from `idx_sightings_ip_time`. Return `429` with a friendly message.
 3. Validate:
@@ -157,19 +168,24 @@ Server steps, in order:
 5. Return `201` with the new sighting.
 
 ### `GET /api/leaderboard`
+
 Top 10 spotters:
+
 ```sql
 SELECT nickname, COUNT(*) AS sightings
 FROM sightings
 WHERE hidden = 0 AND nickname IS NOT NULL
 GROUP BY nickname ORDER BY sightings DESC LIMIT 10;
 ```
+
 Edge-cache for 5 minutes.
 
 ### `GET /api/heatmap`
+
 Returns `[lat, lng]` pairs for the latest 1,000 visible sightings. Edge-cache for 5 minutes.
 
 ### Admin (kill switch)
+
 - `POST /api/admin/hide/:id` and `POST /api/admin/unhide/:id`.
 - Requires `Authorization: Bearer <ADMIN_TOKEN>` (a Wrangler secret). Compare with a constant-time check.
 - No admin UI in v1. A `curl` one-liner is documented in the README.
@@ -182,18 +198,19 @@ Returns `[lat, lng]` pairs for the latest 1,000 visible sightings. Edge-cache fo
 - **Tiles:** use a light, minimal basemap to fit the clean style. Preferred: CARTO "Positron" (free for light use, needs attribution). Fallback: standard OpenStreetMap tiles. Both need visible attribution. Don't hammer OSM's volunteer tile servers. Make the tile URL a config constant so it can be swapped easily.
 - **Pins:** a custom marker for each sighting. Colour or opacity fades with age, with the newest pin emphasised. Clicking a pin opens a popup with the activity, note, place name, nickname and relative time ("12 min ago").
 - **Add a sighting:** a prominent "I saw him!" button. Click the button, then tap or click the map to drop a pin, or use "use my location". Opens a small form with activity dropdown, optional note, place name and nickname, plus the Turnstile widget and Submit. Show success and error states.
-- **Banner (top of page):** "Last seen **23 minutes ago** near *the Malls* — 🔥 Hot", with the status derived as below.
+- **Banner (top of page):** "Last seen **23 minutes ago** near _the Malls_ — 🔥 Hot", with the status derived as below.
 - **Status logic** (`status.ts`, shared by Worker and UI):
 
-  | Age of latest sighting | Status |
-  |---|---|
-  | < 1 hour | Hot |
-  | < 6 hours | Warm |
-  | < 24 hours | Cool |
-  | < 7 days | Cold |
-  | ≥ 7 days or none | Missing — "Presumed on tour" |
+  | Age of latest sighting | Status                       |
+  | ---------------------- | ---------------------------- |
+  | < 1 hour               | Hot                          |
+  | < 6 hours              | Warm                         |
+  | < 24 hours             | Cool                         |
+  | < 7 days               | Cold                         |
+  | ≥ 7 days or none       | Missing — "Presumed on tour" |
 
   Playful copy for each is welcome. Keep it dry rather than cartoonish.
+
 - **Leaderboard:** a small panel or drawer showing the top spotters.
 - **Refresh:** poll `/api/sightings` and `/api/latest` every 60s while the tab is visible (`visibilitychange`).
 - **Times:** store UTC, display in Europe/London.
@@ -216,11 +233,13 @@ Returns `[lat, lng]` pairs for the latest 1,000 visible sightings. Edge-cache fo
 ## 8. Deployment
 
 ### Cloudflare prerequisites (manual, for Luke)
+
 1. `wheresmcgraeballs.co.uk` must be a zone on Cloudflare (nameservers pointed at Cloudflare at the registrar), so the Worker can use it as a Custom Domain.
 2. Create a Turnstile widget for the domain. Note the **site key** (public, goes in frontend config) and **secret key** (a secret).
 3. Create the D1 database: `npx wrangler d1 create graeballs-db`, then put the returned `database_id` in `wrangler.jsonc`.
 
 ### `wrangler.jsonc` (outline)
+
 ```jsonc
 {
   "name": "wheres-mc-graeballs",
@@ -228,23 +247,31 @@ Returns `[lat, lng]` pairs for the latest 1,000 visible sightings. Edge-cache fo
   "compatibility_date": "2026-11-01",
   "assets": { "directory": "./public", "not_found_handling": "single-page-application" },
   "d1_databases": [
-    { "binding": "DB", "database_name": "graeballs-db", "database_id": "<fill in>", "migrations_dir": "migrations" }
+    {
+      "binding": "DB",
+      "database_name": "graeballs-db",
+      "database_id": "<fill in>",
+      "migrations_dir": "migrations",
+    },
   ],
   "routes": [
     { "pattern": "wheresmcgraeballs.co.uk", "custom_domain": true },
-    { "pattern": "www.wheresmcgraeballs.co.uk", "custom_domain": true }
+    { "pattern": "www.wheresmcgraeballs.co.uk", "custom_domain": true },
   ],
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
 }
 ```
+
 Note: API routes (`/api/*`) must reach the Worker before the SPA fallback. Use `assets.run_worker_first: ["/api/*"]` (check the current wrangler docs for the exact key).
 
 ### CI/CD from GitHub
+
 Recommended (free, and fully under your control): a **GitHub Actions** workflow using `cloudflare/wrangler-action` on pushes to `main`, with `CLOUDFLARE_API_TOKEN` (scoped to Workers and D1 edit) and `CLOUDFLARE_ACCOUNT_ID` as repo secrets. Steps: `npm ci` → `npm test` → `npm run build` → `wrangler d1 migrations apply graeballs-db --remote` → `wrangler deploy`. Actions is free for public repos and has a free monthly allowance on private ones.
 
 Alternative: Cloudflare **Workers Builds** (connect the repo in the dashboard). It has a free tier with limited build minutes, so check the current allowance before relying on it.
 
 ### Local development
+
 - `npm run dev`: Vite plus `wrangler dev` with a local D1 (`wrangler d1 migrations apply graeballs-db --local`).
 - Use Cloudflare's Turnstile **test keys** locally (always-pass site key `1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`).
 - Seed script (`npm run seed`) inserting ~15 fake sightings around Basingstoke so the map, heatmap and leaderboard can be developed.
@@ -252,7 +279,7 @@ Alternative: Cloudflare **Workers Builds** (connect the repo in the dashboard). 
 ## 9. Testing
 
 - Unit tests (Vitest): status calculation, bbox validation, input sanitising, rate-limit logic.
-- Worker integration tests with `@cloudflare/vitest-pool-workers` against a local D1: POST happy path, bad Turnstile, out-of-bounds pin, rate limit hit, hidden sightings excluded from reads.
+- Worker integration tests with `@cloudflare/vitest-plugin` against a local D1: POST happy path, bad Turnstile, out-of-bounds pin, rate limit hit, hidden sightings excluded from reads.
 - Manual check on a real phone: add a pin, geolocation prompt, form usability, banner updating.
 
 ## 10. Build order for Claude Code

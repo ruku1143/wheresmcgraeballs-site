@@ -1,5 +1,10 @@
 // Shared by the Worker and the frontend.
 export const BOUNDS = { south: 51.22, north: 51.31, west: -1.17, east: -1.0 } as const;
+
+/** True if the point is inside the Basingstoke box. */
+export function inBounds(lat: number, lng: number): boolean {
+  return lat >= BOUNDS.south && lat <= BOUNDS.north && lng >= BOUNDS.west && lng <= BOUNDS.east;
+}
 export const CENTRE: [number, number] = [51.2665, -1.087];
 export const DEFAULT_ZOOM = 14;
 
@@ -22,3 +27,6 @@ export const SPOTTED = { maxAgeSeconds: 30 * 24 * 3600, skewSeconds: 120 } as co
 export const RECENT_SECONDS = 24 * 3600;
 
 export const LIMITS = { place: 60, note: 140, nickname: 24 } as const;
+
+/** How many sightings the map loads; also the API default, so both share one edge-cache entry. */
+export const SIGHTINGS_LIMIT = 200;

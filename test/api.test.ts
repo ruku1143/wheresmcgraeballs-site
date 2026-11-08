@@ -1,6 +1,7 @@
 import { env } from "cloudflare:workers";
 import { beforeEach, afterEach, describe, expect, it, vi } from "vitest";
 import app from "../src/worker/index";
+import headersFile from "../src/web/static/_headers?raw";
 
 // Await anything the Worker hands to waitUntil (cache writes) so tests are deterministic.
 const call = async (path: string, init?: RequestInit) => {
@@ -48,8 +49,19 @@ function mockFetch(opts: { turnstile?: boolean; place?: Place } = {}) {
   });
 }
 
+const CACHED_READS = [
+  "/api/sightings?limit=200",
+  "/api/latest",
+  "/api/heatmap",
+  "/api/leaderboard",
+];
+
 beforeEach(async () => {
   await env.DB.prepare("DELETE FROM sightings").run();
+  // Start every test with an empty edge cache, so no test sees another's cached reads.
+  await Promise.all(
+    CACHED_READS.map((p) => caches.default.delete(new Request(`https://example.com${p}`))),
+  );
   mockFetch();
 });
 afterEach(() => vi.restoreAllMocks());
@@ -88,11 +100,11 @@ describe("spotted_at", () => {
     expect((await post({ spotted_at: now() - 7200, note: "older" })).status).toBe(201);
     expect((await post({ spotted_at: now() - 60, note: "newer" })).status).toBe(201);
     expect((await post({ spotted_at: now() - 86400, note: "oldest" })).status).toBe(201);
-    const list = (await (await call("/api/sightings?x=order")).json()) as {
+    const list = (await (await call("/api/sightings")).json()) as {
       sightings: { note: string }[];
     };
     expect(list.sightings.map((s) => s.note)).toEqual(["newer", "older", "oldest"]);
-    const latest = (await (await call("/api/latest?x=order")).json()) as {
+    const latest = (await (await call("/api/latest")).json()) as {
       sighting: { note: string };
       status: { key: string };
     };
@@ -108,7 +120,7 @@ describe("spotted_at", () => {
 
   it("an old sighting does not make the banner hot", async () => {
     await post({ spotted_at: now() - 3 * 86400 });
-    const latest = (await (await call("/api/latest?x=old")).json()) as { status: { key: string } };
+    const latest = (await (await call("/api/latest")).json()) as { status: { key: string } };
     expect(latest.status.key).toBe("cold");
   });
 });
@@ -164,6 +176,32 @@ describe("place from the pin", () => {
   });
 });
 
+describe("edge cache", () => {
+  it("can't be bypassed with junk query strings", async () => {
+    await call("/api/latest");
+    await post({ note: "after" }); // purges the canonical entry, so prime it again
+    const first = (await (await call("/api/latest")).json()) as { sighting: { note: string } };
+    expect(first.sighting.note).toBe("after");
+    // A write that skips the purge (straight to D1) must not be visible through a junk query.
+    await env.DB.prepare("UPDATE sightings SET note = 'sneaky'").run();
+    for (const q of ["?x=1", "?cachebust=2", ""]) {
+      const r = (await (await call(`/api/latest${q}`)).json()) as { sighting: { note: string } };
+      expect(r.sighting.note, q).toBe("after");
+    }
+  });
+
+  it("shares one entry for every spelling of the default sightings list", async () => {
+    await call("/api/sightings");
+    await env.DB.prepare(
+      "INSERT INTO sightings (lat, lng, activity, created_at, spotted_at, ip_hash) VALUES (51.27, -1.09, 'lost', 1, 1, 'x')",
+    ).run();
+    for (const q of ["", "?limit=200", "?limit=junk", "?limit=200&x=1"]) {
+      const r = (await (await call(`/api/sightings${q}`)).json()) as { sightings: unknown[] };
+      expect(r.sightings, q).toHaveLength(0);
+    }
+  });
+});
+
 describe("live updates", () => {
   const URL_ = "/api/sightings?limit=200";
   const notes = async () =>
@@ -204,6 +242,22 @@ describe("live updates", () => {
   });
 });
 
+describe("leaderboard", () => {
+  it("counts nicknames case-insensitively", async () => {
+    await post({ nickname: "Tester" }, "1.1.1.1");
+    await post({ nickname: "tester" }, "2.2.2.2");
+    await post({ nickname: "TESTER" }, "3.3.3.3");
+    await post({ nickname: "Other" }, "4.4.4.4");
+    const { leaderboard } = (await (await call("/api/leaderboard")).json()) as {
+      leaderboard: { nickname: string; sightings: number }[];
+    };
+    expect(leaderboard).toEqual([
+      { nickname: "TESTER", sightings: 3 },
+      { nickname: "Other", sightings: 1 },
+    ]);
+  });
+});
+
 describe("reads and admin", () => {
   it("hides and unhides sightings everywhere", async () => {
     const created = (await (await post({ nickname: "Ghost" })).json()) as {
@@ -217,15 +271,15 @@ describe("reads and admin", () => {
       200,
     );
 
-    const list = (await (await call("/api/sightings?x=hidden")).json()) as { sightings: unknown[] };
+    const list = (await (await call("/api/sightings")).json()) as { sightings: unknown[] };
     expect(list.sightings).toHaveLength(0);
-    const lb = (await (await call("/api/leaderboard?x=hidden")).json()) as {
+    const lb = (await (await call("/api/leaderboard")).json()) as {
       leaderboard: unknown[];
     };
     expect(lb.leaderboard).toHaveLength(0);
-    const heat = (await (await call("/api/heatmap?x=hidden")).json()) as { points: unknown[] };
+    const heat = (await (await call("/api/heatmap")).json()) as { points: unknown[] };
     expect(heat.points).toHaveLength(0);
-    const latest = (await (await call("/api/latest?x=hidden")).json()) as {
+    const latest = (await (await call("/api/latest")).json()) as {
       sighting: unknown;
       status: { key: string };
     };
@@ -233,10 +287,19 @@ describe("reads and admin", () => {
     expect(latest.status.key).toBe("missing");
 
     await call(`/api/admin/unhide/${id}`, { method: "POST", headers: auth });
-    const again = (await (await call("/api/sightings?x=unhidden")).json()) as {
+    const again = (await (await call("/api/sightings")).json()) as {
       sightings: unknown[];
     };
     expect(again.sightings).toHaveLength(1);
+  });
+
+  it("rejects a malformed admin id", async () => {
+    const auth = { Authorization: "Bearer test-admin" };
+    for (const id of ["12abc", "1e3", "-1"])
+      expect(
+        (await call(`/api/admin/hide/${id}`, { method: "POST", headers: auth })).status,
+        id,
+      ).toBe(400);
   });
 
   it("returns security headers", async () => {
@@ -244,5 +307,13 @@ describe("reads and admin", () => {
     expect(res.status).toBe(404);
     expect(res.headers.get("Content-Security-Policy")).toContain("challenges.cloudflare.com");
     expect(res.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+});
+
+describe("CSP", () => {
+  it("is identical in the Worker and in static/_headers", async () => {
+    const worker = (await call("/api/nope")).headers.get("Content-Security-Policy");
+    const fromFile = headersFile.match(/Content-Security-Policy:\s*(.+)/)?.[1].trim();
+    expect(fromFile).toBe(worker);
   });
 });
