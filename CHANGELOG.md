@@ -2,6 +2,11 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
+## 0.5.1
+
+- Copy: no more disclaimers on the site. The "It's a joke. MC Graeballs is a character" footer line and the "It's a joke" in the page description are gone, and the README no longer has one. The code of conduct keeps its rules (no harassment, stalking or tracking anyone, and how to report content) without the "character" wording.
+- Add `.github/dependabot.yml`: weekly grouped updates for npm packages and GitHub Actions. Dependabot PRs skip the "Version bumped" CI check, because Dependabot can't bump the version itself.
+
 ## 0.5.0
 
 Code review clean-up. Adds migration `0003_index_cleanup.sql`: apply it to `graeballs-db` and `graeballs-db-preview` when this ships.

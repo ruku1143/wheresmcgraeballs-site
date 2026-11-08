@@ -16,6 +16,8 @@ How to bump, in the same PR:
 2. Add an entry for the new version at the top of `CHANGELOG.md`.
 3. Don't bump a version that is already in `main`. If another PR merged first, bump again after merging `main` into your branch.
 
+The one exception is **Dependabot** PRs (`.github/dependabot.yml`): they skip the version check. Their updates ship with the next PR that bumps the version, so mention them in that PR's CHANGELOG entry.
+
 ## Checks before pushing
 
 ```bash
@@ -31,4 +33,5 @@ The same checks run in GitHub Actions (`.github/workflows/ci.yml`), along with a
 - Never put secrets in the repo. `TURNSTILE_SECRET`, `ADMIN_TOKEN` and `IP_HASH_SALT` are Worker secrets.
 - Don't use anything on the Cloudflare paid plan or the "Do NOT use" list in `PLAN.md` section 2b (R2, Durable Objects, Queues, the Rate Limiting binding, etc.). The one exception is **Cloudflare Web Analytics** (the beacon in `src/web/index.html`): it is free and cookie-less, and the CSP allows it. If you change the CSP, change it in both `src/worker/index.ts` and `src/web/static/_headers`.
 - User text is rendered with `textContent` only. Never `innerHTML` with user data.
-- No photos or likenesses of real people anywhere in the site. MC Graeballs is fictional.
+- No photos or likenesses of real people anywhere in the site.
+- Play it straight: no "it's a joke" or "he's a character" disclaimers on the site. The house rules live in `CODE_OF_CONDUCT.md`.

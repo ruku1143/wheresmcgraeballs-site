@@ -30,9 +30,10 @@ jobs:
       - run: npm run build
 
   # CLAUDE.md: every PR bumps the version in package.json and adds a CHANGELOG entry.
+  # Dependabot can't do that, so its PRs skip this check (a skipped job still counts as passing).
   version-bump:
     name: Version bumped
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' && github.event.pull_request.user.login != 'dependabot[bot]'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

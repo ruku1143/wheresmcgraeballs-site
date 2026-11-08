@@ -216,7 +216,7 @@ Returns `[lat, lng]` pairs for the latest 1,000 visible sightings. Edge-cache fo
 - **Times:** store UTC, display in Europe/London.
 - **Mobile first.** Most friends will use this on a phone. Make tap targets large and the form usable one-handed.
 - **Safety:** render all user text with `textContent` or escape it. Never use `innerHTML` with user data.
-- **Footer:** a short "It's a joke. MC Graeballs is fictional. Don't be weird." line, a map attribution, and a privacy note (IP addresses are stored only as salted hashes, for rate limiting).
+- **Footer:** a map attribution and a privacy note (IP addresses are stored only as salted hashes, for rate limiting).
 
 ## 7. Security and privacy checklist
 

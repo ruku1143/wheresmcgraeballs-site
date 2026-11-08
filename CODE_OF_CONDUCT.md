@@ -1,10 +1,8 @@
 # Code of Conduct
 
-## This is a joke
+## The short version
 
-**Where's MC Graeballs?** is a joke website. **MC Graeballs is a fictional character.** The "sightings" are a game: they are not reports about a real person, and the site is not a way to track, find or follow anyone.
-
-Any resemblance to a real person is coincidental. If you think a sighting, note or name refers to a real, identifiable person, it should not be there. Don't add it, and tell us so it can be hidden.
+**Where's MC Graeballs?** is a game, not a way to track, find or follow anyone. If a sighting, note or name refers to a real, identifiable person, it should not be there. Don't add it, and tell us so it can be hidden.
 
 ## What we don't condone
 
@@ -20,7 +18,7 @@ If the joke stops being funny for someone, it stops. Don't be weird.
 
 ## Using the site
 
-- Keep notes, place names and spotter names clean and about the fictional character only.
+- Keep notes, place names and spotter names clean and about MC Graeballs only.
 - Don't submit sightings you know are about a real person.
 - Sightings that break these rules may be hidden or removed without notice, and rate limits and filters may block abuse.
 

@@ -1,6 +1,6 @@
 # Where's MC Graeballs?
 
-A joke "Where's Wally" tracker for Basingstoke. Drop a "last seen" pin, see the banner status, the hotspot heatmap and the spotter leaderboard. **It's fictional. Don't be weird.**
+A joke "Where's Wally" tracker for Basingstoke. Drop a "last seen" pin, see the banner status, the hotspot heatmap and the spotter leaderboard.
 
 Runs as one Cloudflare Worker (Hono API + static Leaflet frontend) with a D1 database, entirely on the **Workers Free plan**. See [PLAN.md](PLAN.md) for the design.
 
@@ -60,7 +60,7 @@ Hiding clears the cache straight away in the data centre that handled the reques
 ## Project policies
 
 - [LICENSE](LICENSE) (MIT)
-- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): the site is a joke and harassment of anyone is not condoned
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): the house rules, including no harassment or tracking of anyone
 - [SECURITY.md](SECURITY.md): how to report a vulnerability privately
 - [CLAUDE.md](CLAUDE.md): contributor notes, including the per-PR version bump
 - [CHANGELOG.md](CHANGELOG.md)
