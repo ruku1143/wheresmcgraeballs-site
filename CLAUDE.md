@@ -22,6 +22,8 @@ How to bump, in the same PR:
 npm run lint && npm run typecheck && npm test && npm run build
 ```
 
+The same checks run in GitHub Actions (`.github/workflows/ci.yml`), along with a "Version bumped" job that fails the PR if `package.json` still has the base branch's version or `CHANGELOG.md` has no entry for it.
+
 ## Things to know
 
 - `public/` is generated (`npm run build`) and gitignored. Workers Builds also needs its dashboard **Build command** set to `npm run build`; `wrangler.jsonc` has a `build.command` as a backup.

@@ -2,6 +2,11 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
+## 0.3.1
+
+- Add a CI workflow (`.github/workflows/ci.yml`): lint, typecheck, tests and build on every PR and push to `main`, plus a check that each PR bumps the version and adds a changelog entry.
+- Remove the old "Test and deploy" workflow. Every run of it failed at startup, and deploys go through Cloudflare Workers Builds.
+
 ## 0.3.0
 
 - Map pins are now coloured dots instead of the mic emoji. The colour follows the sighting's age (hot, warm, cool, cold, older), matching the banner. Sightings from the last 24 hours get a radar ping (respects reduced-motion).
