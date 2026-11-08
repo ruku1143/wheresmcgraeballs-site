@@ -303,7 +303,6 @@ form.addEventListener("submit", async (e) => {
       lat: chosen.lat,
       lng: chosen.lng,
       activity: val("activity"),
-      place_name: val("place_name") || undefined,
       note: val("note") || undefined,
       nickname: val("nickname") || undefined,
       spotted_at: Math.floor(spottedMs / 1000),

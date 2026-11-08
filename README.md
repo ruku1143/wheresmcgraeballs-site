@@ -68,3 +68,7 @@ Hiding clears the cache straight away in the data centre that handled the reques
 ## Analytics
 
 Visits are counted with Cloudflare Web Analytics (cookie-less). The beacon snippet is at the bottom of `src/web/index.html`; its token is public. The CSP in `src/worker/index.ts` and `src/web/static/_headers` allows `static.cloudflareinsights.com` and `cloudflareinsights.com`. In Cloudflare, the Web Analytics site must be set up for `wheresmcgraeballs.co.uk`.
+
+## Place names
+
+The "Near:" text on each sighting is not typed by users. When a sighting is posted, the Worker looks up the pin's road and area with OpenStreetMap Nominatim (`src/worker/geocode.ts`, zoom 17, so a road name and never a house number), for example "Telford Road, Houndmills". It follows the Nominatim usage policy: an identifying `User-Agent`, results cached for 30 days, and tiny volume (Turnstile plus 3 sightings per 10 minutes per IP). A failed lookup leaves the place blank and never blocks a sighting. If volume ever grows, switch provider or self-host.

@@ -14,7 +14,6 @@ export interface NewSighting {
   lat: number;
   lng: number;
   activity: string;
-  place_name?: string;
   note?: string;
   nickname?: string;
   /** Unix seconds; omitted means "now". */

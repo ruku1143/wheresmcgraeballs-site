@@ -45,10 +45,6 @@
           <input type="datetime-local" name="spotted_at" id="spotted-at" required />
         </label>
         <label
-          >Where, roughly? <small>(optional)</small>
-          <input name="place_name" maxlength="60" autocomplete="off" />
-        </label>
-        <label
           >Note <small>(optional)</small>
           <input name="note" maxlength="140" autocomplete="off" />
         </label>
@@ -104,7 +100,8 @@
         <p>
           Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. IP
           addresses are stored only as salted hashes, for rate limiting. Visits are counted
-          anonymously with Cloudflare Web Analytics (no cookies).
+          anonymously with Cloudflare Web Analytics (no cookies). A pin's position is sent to
+          OpenStreetMap to look up the street name.
         </p>
       </div>
       <span id="version" class="version"></span>

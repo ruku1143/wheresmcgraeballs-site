@@ -27,18 +27,30 @@ const post = (body: object, ip = "1.1.1.1") =>
     }),
   });
 
-function mockTurnstile(success: boolean) {
-  vi.spyOn(globalThis, "fetch").mockImplementation(
-    async () =>
-      new Response(JSON.stringify({ success }), {
-        headers: { "content-type": "application/json" },
-      }),
-  );
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
+
+type Place = Record<string, string> | "fail";
+let nominatimCalls: { url: string; userAgent: string | null }[] = [];
+
+/** Route outgoing fetches: Turnstile verification and the Nominatim reverse geocoder. */
+function mockFetch(opts: { turnstile?: boolean; place?: Place } = {}) {
+  const { turnstile = true, place = { road: "Telford Road", suburb: "Houndmills" } } = opts;
+  nominatimCalls = [];
+  vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const url = String(input instanceof Request ? input.url : input);
+    if (url.includes("nominatim.openstreetmap.org")) {
+      const headers = new Headers(init?.headers);
+      nominatimCalls.push({ url, userAgent: headers.get("User-Agent") });
+      return place === "fail" ? json({ error: "boom" }, 500) : json({ address: place });
+    }
+    return json({ success: turnstile });
+  });
 }
 
 beforeEach(async () => {
   await env.DB.prepare("DELETE FROM sightings").run();
-  mockTurnstile(true);
+  mockFetch();
 });
 afterEach(() => vi.restoreAllMocks());
 
@@ -52,7 +64,7 @@ describe("POST /api/sightings", () => {
   });
 
   it("rejects a failed Turnstile check", async () => {
-    mockTurnstile(false);
+    mockFetch({ turnstile: false });
     expect((await post({})).status).toBe(403);
   });
 
@@ -98,6 +110,57 @@ describe("spotted_at", () => {
     await post({ spotted_at: now() - 3 * 86400 });
     const latest = (await (await call("/api/latest?x=old")).json()) as { status: { key: string } };
     expect(latest.status.key).toBe("cold");
+  });
+});
+
+describe("place from the pin", () => {
+  const placeOf = async (res: Response) =>
+    ((await res.json()) as { sighting: { place_name: string | null } }).sighting.place_name;
+
+  it("stores road and area from the pin, with no house number", async () => {
+    mockFetch({
+      place: {
+        house_number: "12",
+        road: "Telford Road",
+        suburb: "Houndmills",
+        town: "Basingstoke",
+      },
+    });
+    const res = await post({ lat: 51.273, lng: -1.11 });
+    expect(res.status).toBe(201);
+    expect(await placeOf(res)).toBe("Telford Road, Houndmills");
+    expect(nominatimCalls).toHaveLength(1);
+    expect(nominatimCalls[0].url).toContain("zoom=17");
+    expect(nominatimCalls[0].userAgent).toMatch(/wheresmcgraeballs/);
+  });
+
+  it("ignores a place_name sent by the client", async () => {
+    mockFetch({ place: { road: "Church Lane", village: "Old Basing" } });
+    const res = await post({ lat: 51.2801, lng: -1.0402, place_name: "14 Acacia Avenue" });
+    expect(await placeOf(res)).toBe("Church Lane, Old Basing");
+  });
+
+  it("still saves the sighting when the geocoder fails", async () => {
+    mockFetch({ place: "fail" });
+    const res = await post({ lat: 51.2555, lng: -1.0701 });
+    expect(res.status).toBe(201);
+    expect(await placeOf(res)).toBeNull();
+  });
+
+  it("reuses the answer for the same spot instead of asking again", async () => {
+    mockFetch({ place: { road: "Southview Road", suburb: "Hatch Warren" } });
+    await post({ lat: 51.2602, lng: -1.1203 });
+    expect(nominatimCalls).toHaveLength(1);
+    const second = await post({ lat: 51.2602, lng: -1.1203 }, "2.2.2.2");
+    expect(await placeOf(second)).toBe("Southview Road, Hatch Warren");
+    expect(nominatimCalls).toHaveLength(1);
+  });
+
+  it("does not look anything up for a request that is rejected", async () => {
+    mockFetch();
+    const res = await post({ lat: -33.8, lng: 151.2 });
+    expect(res.status).toBe(400);
+    expect(nominatimCalls).toHaveLength(0);
   });
 });
 

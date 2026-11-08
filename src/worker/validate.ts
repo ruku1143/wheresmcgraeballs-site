@@ -3,7 +3,6 @@ import { ACTIVITIES, BOUNDS, LIMITS, SPOTTED, type Activity } from "../shared/co
 export interface SightingInput {
   lat: number;
   lng: number;
-  place_name: string | null;
   activity: Activity;
   note: string | null;
   nickname: string | null;
@@ -58,17 +57,15 @@ export function validateSighting(
       return { ok: false, error: "That's too long ago. The trail is cold." };
     spotted_at = Math.min(t, now);
   }
-  const place_name = clean(b.place_name, LIMITS.place);
   const note = clean(b.note, LIMITS.note);
   const nickname = clean(b.nickname, LIMITS.nickname);
-  if (containsBlocked(place_name) || containsBlocked(note) || containsBlocked(nickname))
+  if (containsBlocked(note) || containsBlocked(nickname))
     return { ok: false, error: "Keep it clean, please." };
   return {
     ok: true,
     value: {
       lat,
       lng,
-      place_name,
       activity: b.activity as Activity,
       note,
       nickname,

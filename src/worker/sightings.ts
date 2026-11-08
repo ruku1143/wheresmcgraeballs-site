@@ -1,5 +1,6 @@
 import { computeStatus } from "../shared/status";
 import { RATE, hashIp, isRateLimited } from "./ratelimit";
+import { lookupPlace } from "./geocode";
 import { validateSighting } from "./validate";
 import { verifyTurnstile } from "./turnstile";
 
@@ -80,12 +81,14 @@ export async function createSighting(
   const v = validateSighting(body, now);
   if (!v.ok) return { status: 400, json: { error: v.error } };
   const s = v.value;
+  // The place text always comes from the pin, never from the client.
+  const place_name = await lookupPlace(s.lat, s.lng);
 
   const row = await env.DB.prepare(
     `INSERT INTO sightings (lat, lng, place_name, activity, note, nickname, created_at, spotted_at, ip_hash)
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9) RETURNING ${PUBLIC_COLS}`,
   )
-    .bind(s.lat, s.lng, s.place_name, s.activity, s.note, s.nickname, now, s.spotted_at, ipHash)
+    .bind(s.lat, s.lng, place_name, s.activity, s.note, s.nickname, now, s.spotted_at, ipHash)
     .first();
   return { status: 201, json: { sighting: row } };
 }
