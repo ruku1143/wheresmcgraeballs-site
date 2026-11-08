@@ -1,6 +1,6 @@
 # Where's MC Graeballs?
 
-A joke "Where's Wally" tracker for Basingstoke. Drop a "last seen" pin, see the banner status, the hotspot heatmap and the spotter leaderboard. **It's fictional. Don't be weird.**
+A joke "Where's Wally" tracker for Basingstoke. Drop a "last seen" pin, see the banner status, the hotspot heatmap and the spotter leaderboard. **MC Graeballs is a character, not a real person to track. Don't be weird.**
 
 Runs as one Cloudflare Worker (Hono API + static Leaflet frontend) with a D1 database, entirely on the **Workers Free plan**. See [PLAN.md](PLAN.md) for the design.
 

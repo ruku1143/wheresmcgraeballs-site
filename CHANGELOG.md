@@ -2,6 +2,10 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
+## 0.5.1
+
+- Copy: drop the word "fictional". The footer now says "MC Graeballs is a character", and the README, code of conduct and docs say he is a character, not a real person to track.
+
 ## 0.5.0
 
 Code review clean-up. Adds migration `0003_index_cleanup.sql`: apply it to `graeballs-db` and `graeballs-db-preview` when this ships.
