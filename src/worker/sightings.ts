@@ -14,19 +14,19 @@ export interface Env {
 
 export const FRIENDLY_DB_ERROR = "Graeballs is resting, try again tomorrow.";
 
-const PUBLIC_COLS = "id, lat, lng, place_name, activity, note, nickname, created_at";
+const PUBLIC_COLS = "id, lat, lng, place_name, activity, note, nickname, spotted_at";
 
 export async function listSightings(db: D1Database, limit: number, now: number) {
   const { results } = await db
     .prepare(
-      `SELECT ${PUBLIC_COLS} FROM sightings WHERE hidden = 0 ORDER BY created_at DESC LIMIT ?1`,
+      `SELECT ${PUBLIC_COLS} FROM sightings WHERE hidden = 0 ORDER BY spotted_at DESC LIMIT ?1`,
     )
     .bind(limit)
     .all();
-  const latest = results[0] as { created_at: number } | undefined;
+  const latest = results[0] as { spotted_at: number } | undefined;
   return {
     sightings: results,
-    status: computeStatus(latest ? now - latest.created_at : null),
+    status: computeStatus(latest ? now - latest.spotted_at : null),
     now,
   };
 }
@@ -34,10 +34,10 @@ export async function listSightings(db: D1Database, limit: number, now: number) 
 export async function latestSighting(db: D1Database, now: number) {
   const row = await db
     .prepare(
-      `SELECT ${PUBLIC_COLS} FROM sightings WHERE hidden = 0 ORDER BY created_at DESC LIMIT 1`,
+      `SELECT ${PUBLIC_COLS} FROM sightings WHERE hidden = 0 ORDER BY spotted_at DESC LIMIT 1`,
     )
-    .first<{ created_at: number }>();
-  return { sighting: row ?? null, status: computeStatus(row ? now - row.created_at : null), now };
+    .first<{ spotted_at: number }>();
+  return { sighting: row ?? null, status: computeStatus(row ? now - row.spotted_at : null), now };
 }
 
 export async function leaderboard(db: D1Database) {
@@ -53,7 +53,7 @@ export async function leaderboard(db: D1Database) {
 
 export async function heatmap(db: D1Database) {
   const { results } = await db
-    .prepare(`SELECT lat, lng FROM sightings WHERE hidden = 0 ORDER BY created_at DESC LIMIT 1000`)
+    .prepare(`SELECT lat, lng FROM sightings WHERE hidden = 0 ORDER BY spotted_at DESC LIMIT 1000`)
     .all<{ lat: number; lng: number }>();
   return { points: results.map((r) => [r.lat, r.lng]) };
 }
@@ -77,15 +77,15 @@ export async function createSighting(
       },
     };
 
-  const v = validateSighting(body);
+  const v = validateSighting(body, now);
   if (!v.ok) return { status: 400, json: { error: v.error } };
   const s = v.value;
 
   const row = await env.DB.prepare(
-    `INSERT INTO sightings (lat, lng, place_name, activity, note, nickname, created_at, ip_hash)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8) RETURNING ${PUBLIC_COLS}`,
+    `INSERT INTO sightings (lat, lng, place_name, activity, note, nickname, created_at, spotted_at, ip_hash)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9) RETURNING ${PUBLIC_COLS}`,
   )
-    .bind(s.lat, s.lng, s.place_name, s.activity, s.note, s.nickname, now, ipHash)
+    .bind(s.lat, s.lng, s.place_name, s.activity, s.note, s.nickname, now, s.spotted_at, ipHash)
     .first();
   return { status: 201, json: { sighting: row } };
 }

@@ -1,4 +1,4 @@
-import { ACTIVITIES, BOUNDS, LIMITS, type Activity } from "../shared/config";
+import { ACTIVITIES, BOUNDS, LIMITS, SPOTTED, type Activity } from "../shared/config";
 
 export interface SightingInput {
   lat: number;
@@ -7,6 +7,7 @@ export interface SightingInput {
   activity: Activity;
   note: string | null;
   nickname: string | null;
+  spotted_at: number;
 }
 
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
@@ -30,6 +31,7 @@ export function inBounds(lat: number, lng: number): boolean {
 
 export function validateSighting(
   body: unknown,
+  now: number,
 ): { ok: true; value: SightingInput } | { ok: false; error: string } {
   if (!body || typeof body !== "object") return { ok: false, error: "Invalid request." };
   const b = body as Record<string, unknown>;
@@ -45,6 +47,17 @@ export function validateSighting(
     return { ok: false, error: "That's outside Basingstoke. He's not there." };
   if (typeof b.activity !== "string" || !(ACTIVITIES as readonly string[]).includes(b.activity))
     return { ok: false, error: "Pick what he was up to." };
+  let spotted_at = now;
+  if (b.spotted_at !== undefined && b.spotted_at !== null) {
+    const t = b.spotted_at;
+    if (typeof t !== "number" || !Number.isInteger(t))
+      return { ok: false, error: "That date doesn't look right." };
+    if (t > now + SPOTTED.skewSeconds)
+      return { ok: false, error: "He can't have been spotted in the future." };
+    if (t < now - SPOTTED.maxAgeSeconds)
+      return { ok: false, error: "That's too long ago. The trail is cold." };
+    spotted_at = Math.min(t, now);
+  }
   const place_name = clean(b.place_name, LIMITS.place);
   const note = clean(b.note, LIMITS.note);
   const nickname = clean(b.nickname, LIMITS.nickname);
@@ -52,6 +65,14 @@ export function validateSighting(
     return { ok: false, error: "Keep it clean, please." };
   return {
     ok: true,
-    value: { lat, lng, place_name, activity: b.activity as Activity, note, nickname },
+    value: {
+      lat,
+      lng,
+      place_name,
+      activity: b.activity as Activity,
+      note,
+      nickname,
+      spotted_at,
+    },
   };
 }

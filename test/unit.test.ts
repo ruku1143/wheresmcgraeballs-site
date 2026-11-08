@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { computeStatus } from "../src/shared/status";
 import { clean, inBounds, validateSighting } from "../src/worker/validate";
 
+const NOW = 1_800_000_000;
+
 describe("status", () => {
   const H = 3600;
   it.each([
@@ -33,12 +35,37 @@ describe("sanitising", () => {
     expect(clean(42, 10)).toBeNull();
   });
   it("validates a sighting and rejects bad input", () => {
-    const ok = validateSighting({ lat: 51.27, lng: -1.09, activity: "vibing", note: "hi" });
+    const ok = validateSighting({ lat: 51.27, lng: -1.09, activity: "vibing", note: "hi" }, NOW);
     expect(ok.ok).toBe(true);
-    expect(validateSighting({ lat: 51.27, lng: -1.09, activity: "flying" }).ok).toBe(false);
-    expect(validateSighting({ lat: 0, lng: 0, activity: "vibing" }).ok).toBe(false);
+    expect(validateSighting({ lat: 51.27, lng: -1.09, activity: "flying" }, NOW).ok).toBe(false);
+    expect(validateSighting({ lat: 0, lng: 0, activity: "vibing" }, NOW).ok).toBe(false);
     expect(
-      validateSighting({ lat: 51.27, lng: -1.09, activity: "vibing", note: "what the fuck" }).ok,
+      validateSighting({ lat: 51.27, lng: -1.09, activity: "vibing", note: "what the fuck" }, NOW)
+        .ok,
     ).toBe(false);
+  });
+});
+
+describe("spotted_at", () => {
+  const base = { lat: 51.27, lng: -1.09, activity: "vibing" };
+  const check = (spotted_at: unknown) => validateSighting({ ...base, spotted_at }, NOW);
+
+  it("defaults to now when omitted", () => {
+    const r = validateSighting(base, NOW);
+    expect(r.ok && r.value.spotted_at).toBe(NOW);
+  });
+  it("accepts a past time", () => {
+    const r = check(NOW - 3600);
+    expect(r.ok && r.value.spotted_at).toBe(NOW - 3600);
+  });
+  it("clamps tiny clock skew to now, but rejects a real future time", () => {
+    const skew = check(NOW + 60);
+    expect(skew.ok && skew.value.spotted_at).toBe(NOW);
+    expect(check(NOW + 3600).ok).toBe(false);
+  });
+  it("rejects too-old and malformed values", () => {
+    expect(check(NOW - 31 * 24 * 3600).ok).toBe(false);
+    expect(check("yesterday").ok).toBe(false);
+    expect(check(1.5).ok).toBe(false);
   });
 });

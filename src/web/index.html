@@ -41,6 +41,10 @@
           <select name="activity" required></select>
         </label>
         <label
+          >When did you see him?
+          <input type="datetime-local" name="spotted_at" id="spotted-at" required />
+        </label>
+        <label
           >Where, roughly? <small>(optional)</small>
           <input name="place_name" maxlength="60" autocomplete="off" />
         </label>
@@ -68,11 +72,14 @@
     </dialog>
 
     <footer>
-      <p>It's a joke. MC Graeballs is fictional. Don't be weird.</p>
-      <p>
-        Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. IP
-        addresses are stored only as salted hashes, for rate limiting.
-      </p>
+      <div>
+        <p>It's a joke. MC Graeballs is fictional. Don't be weird.</p>
+        <p>
+          Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. IP
+          addresses are stored only as salted hashes, for rate limiting.
+        </p>
+      </div>
+      <span id="version" class="version"></span>
     </footer>
     <script type="module" src="./main.ts"></script>
   </body>

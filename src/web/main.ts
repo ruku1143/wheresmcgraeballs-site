@@ -1,4 +1,4 @@
-import { ACTIVITIES } from "../shared/config";
+import { ACTIVITIES, SPOTTED } from "../shared/config";
 import {
   getConfig,
   getHeatmap,
@@ -37,12 +37,12 @@ async function refresh() {
   try {
     const [latest, list] = await Promise.all([getLatest(), getSightings()]);
     if (!latest.sighting) {
-      setBanner("No sightings yet. Suspicious. Presumed on tour.", "missing");
+      setBanner("No sightings yet. Suspicious. Presumed arrested.", "missing");
     } else {
       const s = latest.sighting;
       const where = s.place_name ? ` near ${s.place_name}` : "";
       setBanner(
-        `Last seen ${ago(latest.now - s.created_at)}${where} — ${latest.status.label}. ${latest.status.blurb}`,
+        `Last seen ${ago(latest.now - s.spotted_at)}${where} — ${latest.status.label}. ${latest.status.blurb}`,
         latest.status.key,
       );
     }
@@ -151,8 +151,19 @@ function stopPicking() {
   pickCancel = null;
 }
 
+/** Local "YYYY-MM-DDTHH:mm" for a datetime-local input. */
+function localInputValue(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
 async function openForm(ll: L.LatLng) {
   chosen = ll;
+  const when = $<HTMLInputElement>("spotted-at");
+  const now = new Date();
+  when.max = localInputValue(now);
+  when.min = localInputValue(new Date(now.getTime() - SPOTTED.maxAgeSeconds * 1000));
+  when.value = localInputValue(now);
   gm.showPicker(ll);
   msg.textContent = "";
   msg.className = "msg";
@@ -218,6 +229,17 @@ form.addEventListener("submit", async (e) => {
     msg.className = "msg error";
     return;
   }
+  const spottedMs = new Date($<HTMLInputElement>("spotted-at").value).getTime();
+  if (Number.isNaN(spottedMs)) {
+    msg.textContent = "Pick when you saw him.";
+    msg.className = "msg error";
+    return;
+  }
+  if (spottedMs > Date.now()) {
+    msg.textContent = "He can't have been spotted in the future.";
+    msg.className = "msg error";
+    return;
+  }
   const btn = $<HTMLButtonElement>("submit-btn");
   btn.disabled = true;
   const data = new FormData(form);
@@ -230,6 +252,7 @@ form.addEventListener("submit", async (e) => {
       place_name: val("place_name") || undefined,
       note: val("note") || undefined,
       nickname: val("nickname") || undefined,
+      spotted_at: Math.floor(spottedMs / 1000),
       turnstileToken: token,
     });
     msg.textContent = "Logged. Legend.";
@@ -249,6 +272,7 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
+$("version").textContent = `v${__APP_VERSION__}`;
 void refresh();
 void refreshHeat();
 startPolling();

@@ -52,3 +52,11 @@ Caches expire within 30s (sightings) or 5 minutes (heatmap, leaderboard).
 ## Observability
 
 `wrangler.jsonc` enables Workers Logs (with invocation logs), Traces (10% sampling) and Issues, for both production and previews. From 1 Dec 2026 persisted logs/traces count toward Cloudflare Observability usage, so check the Free allowance and lower `head_sampling_rate` or set `persist: false` if you need to stay at $0.
+
+## Project policies
+
+- [LICENSE](LICENSE) (MIT)
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md): the site is a joke and harassment of anyone is not condoned
+- [SECURITY.md](SECURITY.md): how to report a vulnerability privately
+- [CLAUDE.md](CLAUDE.md): contributor notes, including the per-PR version bump
+- [CHANGELOG.md](CHANGELOG.md)
