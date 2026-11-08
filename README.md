@@ -60,3 +60,7 @@ Hiding clears the cache straight away in the data centre that handled the reques
 - [SECURITY.md](SECURITY.md): how to report a vulnerability privately
 - [CLAUDE.md](CLAUDE.md): contributor notes, including the per-PR version bump
 - [CHANGELOG.md](CHANGELOG.md)
+
+## Analytics
+
+Visits are counted with Cloudflare Web Analytics (cookie-less). The beacon snippet is at the bottom of `src/web/index.html`; its token is public. The CSP in `src/worker/index.ts` and `src/web/static/_headers` allows `static.cloudflareinsights.com` and `cloudflareinsights.com`. In Cloudflare, the Web Analytics site must be set up for `wheresmcgraeballs.co.uk`.

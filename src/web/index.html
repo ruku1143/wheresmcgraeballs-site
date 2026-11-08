@@ -28,7 +28,7 @@
         </button>
       </div>
       <div class="fabs">
-        <button id="board-btn" class="btn secondary" type="button">🏆 Spotters</button>
+        <button id="activity-btn" class="btn secondary" type="button">📋 Activity</button>
         <button id="add-btn" class="btn primary" type="button">I saw him!</button>
       </div>
     </main>
@@ -65,10 +65,37 @@
       </form>
     </dialog>
 
-    <dialog id="board-dialog">
-      <h2>Top spotters</h2>
-      <ol id="board-list"></ol>
-      <button type="button" id="board-close" class="btn secondary">Close</button>
+    <dialog id="activity-dialog" aria-labelledby="activity-title">
+      <h2 id="activity-title">Recent sightings</h2>
+      <div class="tabs" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          id="tab-recent"
+          class="btn tab"
+          aria-selected="true"
+          aria-controls="panel-recent"
+        >
+          Recent
+        </button>
+        <button
+          type="button"
+          role="tab"
+          id="tab-spotters"
+          class="btn tab"
+          aria-selected="false"
+          aria-controls="panel-spotters"
+        >
+          Spotters
+        </button>
+      </div>
+      <div id="panel-recent" role="tabpanel" aria-labelledby="tab-recent" class="scroll">
+        <ul id="recent-list" class="recent"></ul>
+      </div>
+      <div id="panel-spotters" role="tabpanel" aria-labelledby="tab-spotters" class="scroll" hidden>
+        <ol id="board-list"></ol>
+      </div>
+      <button type="button" id="activity-close" class="btn secondary">Close</button>
     </dialog>
 
     <footer>
@@ -76,11 +103,19 @@
         <p>It's a joke. MC Graeballs is fictional. Don't be weird.</p>
         <p>
           Map © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors. IP
-          addresses are stored only as salted hashes, for rate limiting.
+          addresses are stored only as salted hashes, for rate limiting. Visits are counted
+          anonymously with Cloudflare Web Analytics (no cookies).
         </p>
       </div>
       <span id="version" class="version"></span>
     </footer>
     <script type="module" src="./main.ts"></script>
+    <!-- Cloudflare Web Analytics -->
+    <script
+      type="module"
+      src="https://static.cloudflareinsights.com/beacon.min.js"
+      data-cf-beacon='{"token": "1d2464ca61cc417fbf565820bb893559"}'
+    ></script>
+    <!-- End Cloudflare Web Analytics -->
   </body>
 </html>

@@ -1,3 +1,5 @@
+import { RECENT_SECONDS } from "./config";
+
 export type StatusKey = "hot" | "warm" | "cool" | "cold" | "missing";
 
 export interface Status {
@@ -22,4 +24,9 @@ export function computeStatus(ageSeconds: number | null): Status {
   if (ageSeconds < 6 * H) return STATUSES.warm;
   if (ageSeconds < 24 * H) return STATUSES.cool;
   return STATUSES.cold;
+}
+
+/** True for sightings from the last 24 hours (they get the radar ping). */
+export function isRecent(ageSeconds: number): boolean {
+  return ageSeconds < RECENT_SECONDS;
 }

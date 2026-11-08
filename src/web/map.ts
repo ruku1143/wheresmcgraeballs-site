@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 import { BOUNDS, CENTRE, DEFAULT_ZOOM } from "../shared/config";
 import type { Sighting } from "./api";
+import { spotterName } from "../shared/display";
 import { pinIcon } from "./markers";
 import { ago, londonTime } from "./time";
 
@@ -21,6 +22,7 @@ export class GraeballsMap {
   private pins = L.layerGroup();
   private heat = L.heatLayer([], { radius: 28, blur: 22, maxZoom: 16 });
   private picker: L.Marker | null = null;
+  private markers = new Map<number, L.Marker>();
 
   constructor(el: HTMLElement) {
     const bounds = L.latLngBounds([BOUNDS.south, BOUNDS.west], [BOUNDS.north, BOUNDS.east]);
@@ -47,11 +49,21 @@ export class GraeballsMap {
 
   setSightings(list: Sighting[], now: number) {
     this.pins.clearLayers();
+    this.markers.clear();
     list.forEach((s, i) => {
       const m = L.marker([s.lat, s.lng], { icon: pinIcon(now - s.spotted_at, i === 0) });
       m.bindPopup(popupContent(s, now));
       this.pins.addLayer(m);
+      this.markers.set(s.id, m);
     });
+  }
+
+  /** Pan to a sighting and open its popup (used by the Activity list). */
+  focus(id: number) {
+    const m = this.markers.get(id);
+    if (!m) return;
+    this.map.setView(m.getLatLng(), Math.max(this.map.getZoom(), 16));
+    m.openPopup();
   }
 
   setHeat(points: [number, number][]) {
@@ -100,7 +112,7 @@ function popupContent(s: Sighting, now: number): HTMLElement {
   box.append(title);
   if (s.place_name) box.append(row("Near: ", s.place_name));
   if (s.note) box.append(row("", `“${s.note}”`));
-  if (s.nickname) box.append(row("Spotted by: ", s.nickname));
+  box.append(row("Spotted by: ", spotterName(s.nickname)));
   const t = row("", `${ago(now - s.spotted_at)} (${londonTime(s.spotted_at)})`);
   t.style.color = "#666";
   box.append(t);

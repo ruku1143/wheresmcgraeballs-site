@@ -29,4 +29,5 @@ Please test only against your own data, don't access or modify other people's da
 ## Privacy and secrets
 
 - IP addresses are stored only as salted SHA-256 hashes, for rate limiting. Raw IPs are not stored.
+- Visits are counted with Cloudflare Web Analytics, which is cookie-less and collects minimal data. It is the only analytics on the site.
 - Secrets (`TURNSTILE_SECRET`, `ADMIN_TOKEN`, `IP_HASH_SALT`) are Cloudflare Worker secrets and must never be committed. If you find one in the repository or its history, report it privately as above.
