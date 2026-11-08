@@ -16,6 +16,8 @@ How to bump, in the same PR:
 2. Add an entry for the new version at the top of `CHANGELOG.md`.
 3. Don't bump a version that is already in `main`. If another PR merged first, bump again after merging `main` into your branch.
 
+The one exception is **Dependabot** PRs (`.github/dependabot.yml`): they skip the version check. Their updates ship with the next PR that bumps the version, so mention them in that PR's CHANGELOG entry.
+
 ## Checks before pushing
 
 ```bash
