@@ -129,7 +129,7 @@ CREATE TABLE sightings (
 );
 -- Current indexes, after migrations/0003_index_cleanup.sql:
 CREATE INDEX idx_sightings_visible_spotted ON sightings (hidden, spotted_at DESC);
-CREATE INDEX idx_sightings_nickname_nocase ON sightings (nickname COLLATE NOCASE)
+CREATE INDEX IF NOT EXISTS idx_sightings_nickname_nocase ON sightings (nickname COLLATE NOCASE)
   WHERE hidden = 0 AND nickname IS NOT NULL;
 CREATE INDEX idx_sightings_ip_time         ON sightings (ip_hash, created_at);
 ```

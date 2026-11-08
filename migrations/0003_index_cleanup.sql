@@ -4,7 +4,7 @@ DROP INDEX IF EXISTS idx_sightings_visible_time;
 
 -- The leaderboard now groups nicknames case-insensitively, so index them that way.
 DROP INDEX IF EXISTS idx_sightings_nickname;
-CREATE INDEX idx_sightings_nickname_nocase ON sightings (nickname COLLATE NOCASE)
+CREATE INDEX IF NOT EXISTS idx_sightings_nickname_nocase ON sightings (nickname COLLATE NOCASE)
   WHERE hidden = 0 AND nickname IS NOT NULL;
 
 -- Refresh the query planner statistics so it picks the new index (Cloudflare recommends this after creating indexes).
