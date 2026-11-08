@@ -42,7 +42,18 @@
         </label>
         <label
           >When did you see him?
-          <input type="datetime-local" name="spotted_at" id="spotted-at" required />
+          <span class="datetime">
+            <input type="datetime-local" name="spotted_at" id="spotted-at" required />
+            <button
+              type="button"
+              id="open-calendar"
+              class="calendar-btn"
+              aria-label="Open calendar"
+              title="Open calendar"
+            >
+              📅
+            </button>
+          </span>
         </label>
         <label
           >Note <small>(optional)</small>

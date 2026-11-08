@@ -1,4 +1,6 @@
+/* Let native controls (date picker, selects, scrollbars) follow the light or dark theme. */
 :root {
+  color-scheme: light dark;
   --bg: #fafafa;
   --fg: #1a1a1a;
   --muted: #666;
@@ -345,4 +347,34 @@ dialog[open]#activity-dialog {
 }
 .empty {
   font-weight: 600;
+}
+
+/* Date field: on desktop (mouse), a calendar button opens the browser's picker. Phones use their native picker. */
+.datetime {
+  position: relative;
+  display: block;
+}
+.calendar-btn {
+  display: none;
+  position: absolute;
+  top: 4px;
+  right: 0;
+  width: 46px;
+  height: 46px;
+  font-size: 1.2rem;
+  line-height: 1;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+@media (hover: hover) and (pointer: fine) {
+  .calendar-btn {
+    display: block;
+  }
+  .datetime input {
+    padding-right: 48px;
+  }
+  .datetime input::-webkit-calendar-picker-indicator {
+    display: none;
+  }
 }
