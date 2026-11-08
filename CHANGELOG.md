@@ -4,7 +4,7 @@ Versions follow [semver](https://semver.org). The current version lives in `pack
 
 ## 0.5.1
 
-- Copy: drop the word "fictional". The footer now says "MC Graeballs is a character", and the README, code of conduct and docs say he is a character, not a real person to track.
+- Copy: no more disclaimers on the site. The "It's a joke. MC Graeballs is a character" footer line and the "It's a joke" in the page description are gone, and the README no longer has one. The code of conduct keeps its rules (no harassment, stalking or tracking anyone, and how to report content) without the "character" wording.
 
 ## 0.5.0
 
