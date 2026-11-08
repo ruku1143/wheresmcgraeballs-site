@@ -17,7 +17,7 @@
   "dependencies": {
     "hono": "^4.13.17",
     "leaflet": "^1.9.4",
-    "leaflet.heat": "^0.2.0"
+    "leaflet.heat": "^1.0.0"
   },
   "devDependencies": {
     "@cloudflare/vitest-plugin": "^1.6.0",
