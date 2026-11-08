@@ -97,7 +97,7 @@ export class GraeballsMap {
 
 function row(label: string, text: string): HTMLElement {
   const p = document.createElement("p");
-  p.style.margin = "2px 0";
+  p.className = "popup-row";
   const b = document.createElement("strong");
   b.textContent = label;
   p.append(b, document.createTextNode(text));
@@ -114,7 +114,7 @@ function popupContent(s: Sighting, now: number): HTMLElement {
   if (s.note) box.append(row("", `“${s.note}”`));
   box.append(row("Spotted by: ", spotterName(s.nickname)));
   const t = row("", `${ago(now - s.spotted_at)} (${londonTime(s.spotted_at)})`);
-  t.style.color = "#666";
+  t.classList.add("popup-time");
   box.append(t);
   return box;
 }

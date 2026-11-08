@@ -2,6 +2,17 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
+## 0.4.2
+
+Code review clean-up. No visible changes except the Escape-key fix.
+
+- Fix: the edge cache for API reads is now keyed on each route's canonical URL, so junk query strings (`?x=1`, `?x=2`, ...) can no longer skip the cache and run up D1 reads. `/api/sightings`, `?limit=200` and `?limit=junk` now share one cache entry.
+- Fix: closing the sighting form with Escape now removes the temporary pin (before, only Cancel did).
+- Fix: admin hide/unhide reject ids like `12abc` instead of reading them as `12`.
+- Validate a new sighting before calling Turnstile or D1, so bad input costs nothing. Turnstile verification now times out after 5s and handles the widget's error callback.
+- API failures are now logged (they were swallowed), and an edge-cache failure no longer turns a read into an error.
+- Tidy-ups: one shared `inBounds`, friendly error message and sightings limit for the Worker and the frontend; input max lengths come from the shared `LIMITS`; popup styles moved to CSS; a test now checks the CSP in `src/worker/index.ts` and `src/web/static/_headers` match.
+
 ## 0.4.1
 
 - Add a 📅 calendar button next to "When did you see him?" on desktop, which opens the browser's date picker (phones keep their native picker). The browser's own controls now follow dark mode, which also makes the old tiny calendar icon visible in dark mode.

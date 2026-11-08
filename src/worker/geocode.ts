@@ -36,7 +36,7 @@ export function placeFromAddress(address: unknown): string | null {
 
 /** Look up the road and area for a point. Never throws: any failure returns null. */
 export async function lookupPlace(lat: number, lng: number): Promise<string | null> {
-  const cache = (caches as unknown as { default: Cache }).default;
+  const cache = caches.default;
   // About 10 m grid, so repeat spots reuse the answer without mixing up neighbouring roads.
   const key = new Request(`https://geocode.internal/${lat.toFixed(4)},${lng.toFixed(4)}`);
 

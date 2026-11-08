@@ -1,0 +1,4 @@
+# Generated build output
+public/
+# Read by Wrangler and Workers Builds: keep it strict JSON (no trailing commas)
+wrangler.jsonc

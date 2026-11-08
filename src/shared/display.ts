@@ -1,3 +1,6 @@
+/** Shown when the API (usually D1) is unavailable. */
+export const FRIENDLY_DB_ERROR = "Graeballs is resting, try again tomorrow.";
+
 export const ANONYMOUS = "(anonymous)";
 
 /** Spotter name for display; sightings without a nickname are anonymous. */

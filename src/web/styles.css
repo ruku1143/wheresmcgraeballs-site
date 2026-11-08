@@ -378,3 +378,9 @@ dialog[open]#activity-dialog {
     display: none;
   }
 }
+.popup-row {
+  margin: 2px 0;
+}
+.popup-time {
+  color: #666;
+}

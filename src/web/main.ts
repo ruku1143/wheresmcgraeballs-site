@@ -1,18 +1,28 @@
-import { ACTIVITIES, SPOTTED } from "../shared/config";
-import { getConfig, getHeatmap, getLeaderboard, getSightings, postSighting } from "./api";
+import L from "leaflet";
+import { ACTIVITIES, LIMITS, SPOTTED, inBounds } from "../shared/config";
 import { spotterName } from "../shared/display";
-import type { Sighting } from "./api";
+import {
+  getConfig,
+  getHeatmap,
+  getLeaderboard,
+  getSightings,
+  postSighting,
+  type Sighting,
+} from "./api";
 import { GraeballsMap } from "./map";
 import { ago } from "./time";
-import L from "leaflet";
-import { BOUNDS } from "../shared/config";
 
 declare global {
   interface Window {
     turnstile?: {
       render(
         el: HTMLElement,
-        opts: { sitekey: string; callback: (t: string) => void; "expired-callback": () => void },
+        opts: {
+          sitekey: string;
+          callback: (t: string) => void;
+          "expired-callback": () => void;
+          "error-callback": () => void;
+        },
       ): string;
       reset(id?: string): void;
     };
@@ -163,8 +173,17 @@ const form = $<HTMLFormElement>("sighting-form");
 const msg = $("form-msg");
 const addBtn = $<HTMLButtonElement>("add-btn");
 const hint = $("hint");
+const when = $<HTMLInputElement>("spotted-at");
 const select = form.querySelector("select")!;
 for (const a of ACTIVITIES) select.add(new Option(a, a));
+// Keep the inputs' limits in step with the server's.
+form.querySelector<HTMLInputElement>('[name="note"]')!.maxLength = LIMITS.note;
+form.querySelector<HTMLInputElement>('[name="nickname"]')!.maxLength = LIMITS.nickname;
+
+function showMsg(text: string, kind: "" | "ok" | "error" = "") {
+  msg.textContent = text;
+  msg.className = kind ? `msg ${kind}` : "msg";
+}
 
 let chosen: L.LatLng | null = null;
 let token = "";
@@ -192,6 +211,7 @@ async function ensureTurnstile() {
       sitekey: siteKey,
       callback: (t) => (token = t),
       "expired-callback": () => (token = ""),
+      "error-callback": () => (token = ""),
     });
   } else {
     window.turnstile!.reset(widgetId);
@@ -213,20 +233,17 @@ function localInputValue(d: Date): string {
 
 async function openForm(ll: L.LatLng) {
   chosen = ll;
-  const when = $<HTMLInputElement>("spotted-at");
   const now = new Date();
   when.max = localInputValue(now);
   when.min = localInputValue(new Date(now.getTime() - SPOTTED.maxAgeSeconds * 1000));
   when.value = localInputValue(now);
   gm.showPicker(ll);
-  msg.textContent = "";
-  msg.className = "msg";
+  showMsg("");
   formDialog.showModal();
   try {
     await ensureTurnstile();
   } catch (e) {
-    msg.textContent = (e as Error).message;
-    msg.className = "msg error";
+    showMsg((e as Error).message, "error");
   }
 }
 
@@ -252,9 +269,7 @@ $("locate-btn").addEventListener("click", () => {
     (pos) => {
       btn.disabled = false;
       const { latitude: lat, longitude: lng } = pos.coords;
-      const inside =
-        lat >= BOUNDS.south && lat <= BOUNDS.north && lng >= BOUNDS.west && lng <= BOUNDS.east;
-      if (!inside) {
+      if (!inBounds(lat, lng)) {
         alert("You're not in Basingstoke. Tap the map instead.");
         return;
       }
@@ -271,38 +286,24 @@ $("locate-btn").addEventListener("click", () => {
 });
 
 $("open-calendar").addEventListener("click", () => {
-  const input = $<HTMLInputElement>("spotted-at");
   try {
-    input.showPicker();
+    when.showPicker();
   } catch {
-    input.focus(); // older browsers without showPicker()
+    when.focus(); // older browsers without showPicker()
   }
 });
 
-$("cancel-btn").addEventListener("click", () => {
-  formDialog.close();
-  gm.clearPicker();
-});
+$("cancel-btn").addEventListener("click", () => formDialog.close());
+// However the form closes (Cancel, Escape, or after submitting), drop the temporary pin.
+formDialog.addEventListener("close", () => gm.clearPicker());
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   if (!chosen) return;
-  if (!token) {
-    msg.textContent = "Please complete the human check.";
-    msg.className = "msg error";
-    return;
-  }
-  const spottedMs = new Date($<HTMLInputElement>("spotted-at").value).getTime();
-  if (Number.isNaN(spottedMs)) {
-    msg.textContent = "Pick when you saw him.";
-    msg.className = "msg error";
-    return;
-  }
-  if (spottedMs > Date.now()) {
-    msg.textContent = "He can't have been spotted in the future.";
-    msg.className = "msg error";
-    return;
-  }
+  if (!token) return showMsg("Please complete the human check.", "error");
+  const spottedMs = new Date(when.value).getTime();
+  if (Number.isNaN(spottedMs)) return showMsg("Pick when you saw him.", "error");
+  if (spottedMs > Date.now()) return showMsg("He can't have been spotted in the future.", "error");
   const btn = $<HTMLButtonElement>("submit-btn");
   btn.disabled = true;
   const data = new FormData(form);
@@ -317,16 +318,14 @@ form.addEventListener("submit", async (e) => {
       spotted_at: Math.floor(spottedMs / 1000),
       turnstileToken: token,
     });
-    msg.textContent = "Logged. Legend.";
-    msg.className = "msg ok";
+    showMsg("Logged. Legend.", "ok");
     form.reset();
     gm.clearPicker();
     setTimeout(() => formDialog.close(), 700);
     void refresh();
     void refreshHeat();
   } catch (err) {
-    msg.textContent = (err as Error).message;
-    msg.className = "msg error";
+    showMsg((err as Error).message, "error");
     if (widgetId !== undefined) window.turnstile?.reset(widgetId);
     token = "";
   } finally {

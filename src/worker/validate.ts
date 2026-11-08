@@ -1,4 +1,6 @@
-import { ACTIVITIES, BOUNDS, LIMITS, SPOTTED, type Activity } from "../shared/config";
+import { ACTIVITIES, LIMITS, SPOTTED, inBounds, type Activity } from "../shared/config";
+
+export { inBounds };
 
 export interface SightingInput {
   lat: number;
@@ -22,10 +24,6 @@ export function containsBlocked(s: string | null): boolean {
   if (!s) return false;
   const l = s.toLowerCase();
   return BLOCKED.some((w) => l.includes(w));
-}
-
-export function inBounds(lat: number, lng: number): boolean {
-  return lat >= BOUNDS.south && lat <= BOUNDS.north && lng >= BOUNDS.west && lng <= BOUNDS.east;
 }
 
 export function validateSighting(

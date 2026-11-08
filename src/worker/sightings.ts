@@ -13,8 +13,6 @@ export interface Env {
   IP_HASH_SALT: string;
 }
 
-export const FRIENDLY_DB_ERROR = "Graeballs is resting, try again tomorrow.";
-
 const PUBLIC_COLS = "id, lat, lng, place_name, activity, note, nickname, spotted_at";
 
 export async function listSightings(db: D1Database, limit: number, now: number) {
@@ -64,8 +62,16 @@ export async function createSighting(
   body: unknown,
   ip: string | null,
   now: number,
-): Promise<{ status: number; json: unknown }> {
-  const token = (body as { turnstileToken?: unknown } | null)?.turnstileToken;
+): Promise<
+  | { status: 201; json: { sighting: unknown } }
+  | { status: 400 | 403 | 429; json: { error: string } }
+> {
+  // Cheapest check first: bad input never costs a Turnstile call or a D1 read.
+  const v = validateSighting(body, now);
+  if (!v.ok) return { status: 400, json: { error: v.error } };
+  const s = v.value;
+
+  const token = (body as { turnstileToken?: unknown }).turnstileToken;
   if (!(await verifyTurnstile(token, env.TURNSTILE_SECRET, ip)))
     return { status: 403, json: { error: "Couldn't verify you're human. Refresh and try again." } };
 
@@ -78,9 +84,6 @@ export async function createSighting(
       },
     };
 
-  const v = validateSighting(body, now);
-  if (!v.ok) return { status: 400, json: { error: v.error } };
-  const s = v.value;
   // The place text always comes from the pin, never from the client.
   const place_name = await lookupPlace(s.lat, s.lng);
 
