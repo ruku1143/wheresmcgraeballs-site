@@ -270,6 +270,15 @@ $("locate-btn").addEventListener("click", () => {
   );
 });
 
+$("open-calendar").addEventListener("click", () => {
+  const input = $<HTMLInputElement>("spotted-at");
+  try {
+    input.showPicker();
+  } catch {
+    input.focus(); // older browsers without showPicker()
+  }
+});
+
 $("cancel-btn").addEventListener("click", () => {
   formDialog.close();
   gm.clearPicker();

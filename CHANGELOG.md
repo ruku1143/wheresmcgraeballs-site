@@ -2,6 +2,10 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
+## 0.4.1
+
+- Add a 📅 calendar button next to "When did you see him?" on desktop, which opens the browser's date picker (phones keep their native picker). The browser's own controls now follow dark mode, which also makes the old tiny calendar icon visible in dark mode.
+
 ## 0.4.0
 
 - The "Near:" place is now filled in automatically from where the pin was dropped, as the road name and area (for example "Telford Road, Houndmills"), never a house number or building. The free-text "Where, roughly?" field is gone. The lookup happens on the server using OpenStreetMap Nominatim, and a failed lookup just leaves the place blank. Older sightings keep the text they were given.
