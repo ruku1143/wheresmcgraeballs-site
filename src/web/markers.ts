@@ -1,14 +1,15 @@
 import L from "leaflet";
+import { computeStatus, isRecent } from "../shared/status";
 
-// Placeholder pin. Swap this one function when a logo/avatar is supplied.
+/** A coloured dot: colour follows the sighting's age status, recent ones get a radar ping. Styles live in styles.css. */
 export function pinIcon(ageSeconds: number, newest: boolean): L.DivIcon {
-  const day = 86400;
-  const opacity = Math.max(0.35, 1 - ageSeconds / (7 * day));
+  const { key } = computeStatus(ageSeconds);
+  const ping = isRecent(ageSeconds) ? '<span class="ping"></span>' : "";
   return L.divIcon({
-    className: "",
-    html: `<div class="pin${newest ? " newest" : ""}" style="opacity:${opacity.toFixed(2)}">🎤</div>`,
-    iconSize: newest ? [34, 34] : [26, 26],
-    iconAnchor: newest ? [17, 30] : [13, 24],
-    popupAnchor: [0, -22],
+    className: "pin-wrap",
+    html: `<span class="dot dot--${key}${newest ? " dot--newest" : ""}">${ping}</span>`,
+    iconSize: [32, 32], // generous tap target; the visible dot is smaller
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -12],
   });
 }

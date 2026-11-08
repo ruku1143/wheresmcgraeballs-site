@@ -1,5 +1,7 @@
 import { ACTIVITIES, SPOTTED } from "../shared/config";
 import { getConfig, getHeatmap, getLeaderboard, getSightings, postSighting } from "./api";
+import { spotterName } from "../shared/display";
+import type { Sighting } from "./api";
 import { GraeballsMap } from "./map";
 import { ago } from "./time";
 import L from "leaflet";
@@ -26,6 +28,10 @@ function setBanner(text: string, status: string) {
   $("banner-text").textContent = text;
 }
 
+let lastList: { sightings: Sighting[]; now: number } | null = null;
+const activityDialog = $<HTMLDialogElement>("activity-dialog");
+let currentTab: "recent" | "spotters" = "recent";
+
 async function refresh() {
   try {
     // One request feeds both the banner (newest sighting + status) and the pins.
@@ -41,6 +47,8 @@ async function refresh() {
       );
     }
     gm.setSightings(list.sightings, list.now);
+    lastList = { sightings: list.sightings, now: list.now };
+    if (activityDialog.open && currentTab === "recent") renderRecent();
   } catch (e) {
     setBanner((e as Error).message, "missing");
   }
@@ -78,31 +86,76 @@ document.addEventListener("visibilitychange", () => {
   }
 });
 
-// ---------- leaderboard ----------
-const boardDialog = $<HTMLDialogElement>("board-dialog");
-$("board-btn").addEventListener("click", async () => {
+// ---------- activity panel: recent sightings + spotters ----------
+function renderRecent() {
+  const ul = $("recent-list");
+  ul.replaceChildren();
+  if (!lastList || !lastList.sightings.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "No sightings yet. Suspicious.";
+    ul.append(li);
+    return;
+  }
+  for (const s of lastList.sightings) {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "row";
+    const title = document.createElement("span");
+    title.className = "row-title";
+    title.textContent = s.activity;
+    const sub = document.createElement("span");
+    sub.className = "row-sub";
+    sub.textContent = [s.place_name, ago(lastList.now - s.spotted_at), spotterName(s.nickname)]
+      .filter(Boolean)
+      .join(" · ");
+    btn.append(title, sub);
+    btn.addEventListener("click", () => {
+      activityDialog.close();
+      gm.focus(s.id);
+    });
+    li.append(btn);
+    ul.append(li);
+  }
+}
+
+async function renderSpotters() {
   const list = $("board-list");
   list.replaceChildren();
+  const add = (text: string) => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    list.append(li);
+  };
   try {
     const { leaderboard } = await getLeaderboard();
-    if (!leaderboard.length) {
-      const li = document.createElement("li");
-      li.textContent = "Nobody has put their name down yet.";
-      list.append(li);
-    }
-    for (const r of leaderboard) {
-      const li = document.createElement("li");
-      li.textContent = `${r.nickname} — ${r.sightings}`;
-      list.append(li);
-    }
+    if (!leaderboard.length) add("Nobody has put their name down yet.");
+    for (const r of leaderboard) add(`${r.nickname} — ${r.sightings}`);
   } catch (e) {
-    const li = document.createElement("li");
-    li.textContent = (e as Error).message;
-    list.append(li);
+    add((e as Error).message);
   }
-  boardDialog.showModal();
+}
+
+function setTab(tab: "recent" | "spotters") {
+  currentTab = tab;
+  const recent = tab === "recent";
+  $("tab-recent").setAttribute("aria-selected", String(recent));
+  $("tab-spotters").setAttribute("aria-selected", String(!recent));
+  $("panel-recent").hidden = !recent;
+  $("panel-spotters").hidden = recent;
+  $("activity-title").textContent = recent ? "Recent sightings" : "Top spotters";
+  if (recent) renderRecent();
+  else void renderSpotters();
+}
+
+$("activity-btn").addEventListener("click", () => {
+  setTab("recent");
+  activityDialog.showModal();
 });
-$("board-close").addEventListener("click", () => boardDialog.close());
+$("tab-recent").addEventListener("click", () => setTab("recent"));
+$("tab-spotters").addEventListener("click", () => setTab("spotters"));
+$("activity-close").addEventListener("click", () => activityDialog.close());
 
 // ---------- add a sighting ----------
 const formDialog = $<HTMLDialogElement>("form-dialog");

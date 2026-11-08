@@ -27,6 +27,6 @@ npm run lint && npm run typecheck && npm test && npm run build
 - `public/` is generated (`npm run build`) and gitignored. Workers Builds also needs its dashboard **Build command** set to `npm run build`; `wrangler.jsonc` has a `build.command` as a backup.
 - D1 migrations in `migrations/` are **not** applied by deploys. After merging a PR that adds one, apply it to both databases before (or right as) the new code goes live: `graeballs-db` (production) and `graeballs-db-preview` (previews).
 - Never put secrets in the repo. `TURNSTILE_SECRET`, `ADMIN_TOKEN` and `IP_HASH_SALT` are Worker secrets.
-- Don't use anything on the Cloudflare paid plan or the "Do NOT use" list in `PLAN.md` section 2b (R2, Durable Objects, Queues, the Rate Limiting binding, etc.).
+- Don't use anything on the Cloudflare paid plan or the "Do NOT use" list in `PLAN.md` section 2b (R2, Durable Objects, Queues, the Rate Limiting binding, etc.). The one exception is **Cloudflare Web Analytics** (the beacon in `src/web/index.html`): it is free and cookie-less, and the CSP allows it. If you change the CSP, change it in both `src/worker/index.ts` and `src/web/static/_headers`.
 - User text is rendered with `textContent` only. Never `innerHTML` with user data.
 - No photos or likenesses of real people anywhere in the site. MC Graeballs is fictional.

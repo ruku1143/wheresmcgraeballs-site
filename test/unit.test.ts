@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { computeStatus } from "../src/shared/status";
+import { spotterName } from "../src/shared/display";
+import { computeStatus, isRecent } from "../src/shared/status";
 import { clean, inBounds, validateSighting } from "../src/worker/validate";
 
 const NOW = 1_800_000_000;
@@ -67,5 +68,20 @@ describe("spotted_at", () => {
     expect(check(NOW - 31 * 24 * 3600).ok).toBe(false);
     expect(check("yesterday").ok).toBe(false);
     expect(check(1.5).ok).toBe(false);
+  });
+});
+
+describe("recent pings and spotter names", () => {
+  it("pings sightings under 24 hours old", () => {
+    expect(isRecent(0)).toBe(true);
+    expect(isRecent(24 * 3600 - 1)).toBe(true);
+    expect(isRecent(24 * 3600)).toBe(false);
+    expect(isRecent(3 * 24 * 3600)).toBe(false);
+  });
+  it("shows (anonymous) for unnamed spotters", () => {
+    expect(spotterName(null)).toBe("(anonymous)");
+    expect(spotterName(undefined)).toBe("(anonymous)");
+    expect(spotterName("   ")).toBe("(anonymous)");
+    expect(spotterName("Dazza")).toBe("Dazza");
   });
 });

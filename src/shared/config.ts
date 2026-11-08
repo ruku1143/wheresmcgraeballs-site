@@ -18,4 +18,7 @@ export type Activity = (typeof ACTIVITIES)[number];
 /** How far back a sighting can be dated, and clock-skew tolerance for "not in the future". */
 export const SPOTTED = { maxAgeSeconds: 30 * 24 * 3600, skewSeconds: 120 } as const;
 
+/** A sighting younger than this is "recent": its dot gets a radar ping. */
+export const RECENT_SECONDS = 24 * 3600;
+
 export const LIMITS = { place: 60, note: 140, nickname: 24 } as const;
