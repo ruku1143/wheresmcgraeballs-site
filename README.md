@@ -37,7 +37,7 @@ curl -X POST https://wheresmcgraeballs.co.uk/api/admin/hide/123 \
 # undo: .../api/admin/unhide/123
 ```
 
-Caches expire within 30s (sightings) or 5 minutes (heatmap, leaderboard).
+Hiding clears the cache straight away in the data centre that handled the request. Other data centres catch up within 10s (sightings) or 60s (heatmap, leaderboard).
 
 ## Free-plan checklist
 

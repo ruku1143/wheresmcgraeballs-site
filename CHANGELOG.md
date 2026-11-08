@@ -2,6 +2,10 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
+## 0.2.1
+
+- New sightings now show up live. Browsers no longer cache API reads, the server cache lasts 10s (was 30s) for sightings and 60s (was 5 min) for the heatmap and leaderboard, and posting or hiding a sighting clears the cache immediately for that data centre. The page polls every 20s (was 60s), using a single request.
+
 ## 0.2.0
 
 - Lock the map to the Basingstoke area: can't pan or zoom out beyond it.

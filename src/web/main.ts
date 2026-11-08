@@ -1,12 +1,5 @@
 import { ACTIVITIES, SPOTTED } from "../shared/config";
-import {
-  getConfig,
-  getHeatmap,
-  getLatest,
-  getLeaderboard,
-  getSightings,
-  postSighting,
-} from "./api";
+import { getConfig, getHeatmap, getLeaderboard, getSightings, postSighting } from "./api";
 import { GraeballsMap } from "./map";
 import { ago } from "./time";
 import L from "leaflet";
@@ -35,15 +28,16 @@ function setBanner(text: string, status: string) {
 
 async function refresh() {
   try {
-    const [latest, list] = await Promise.all([getLatest(), getSightings()]);
-    if (!latest.sighting) {
+    // One request feeds both the banner (newest sighting + status) and the pins.
+    const list = await getSightings();
+    const s = list.sightings[0];
+    if (!s) {
       setBanner("No sightings yet. Suspicious. Presumed arrested.", "missing");
     } else {
-      const s = latest.sighting;
       const where = s.place_name ? ` near ${s.place_name}` : "";
       setBanner(
-        `Last seen ${ago(latest.now - s.spotted_at)}${where} — ${latest.status.label}. ${latest.status.blurb}`,
-        latest.status.key,
+        `Last seen ${ago(list.now - s.spotted_at)}${where} — ${list.status.label}. ${list.status.blurb}`,
+        list.status.key,
       );
     }
     gm.setSightings(list.sightings, list.now);
@@ -60,10 +54,16 @@ async function refreshHeat() {
   }
 }
 
+// Poll while the tab is visible: sightings every 20s, the heatmap every third tick.
+const POLL_MS = 20_000;
+let ticks = 0;
 let timer: number | undefined;
 function startPolling() {
   stopPolling();
-  timer = window.setInterval(refresh, 60_000);
+  timer = window.setInterval(() => {
+    void refresh();
+    if (++ticks % 3 === 0) void refreshHeat();
+  }, POLL_MS);
 }
 function stopPolling() {
   if (timer !== undefined) window.clearInterval(timer);
@@ -73,6 +73,7 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden) stopPolling();
   else {
     void refresh();
+    void refreshHeat();
     startPolling();
   }
 });
