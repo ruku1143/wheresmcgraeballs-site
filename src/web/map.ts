@@ -29,8 +29,15 @@ export class GraeballsMap {
       zoom: DEFAULT_ZOOM,
       minZoom: 12,
       maxBounds: bounds,
-      maxBoundsViscosity: 0.9,
+      maxBoundsViscosity: 1.0,
     });
+    // Lock the view to the Basingstoke box: no panning outside it, and no zooming out far enough to see beyond it.
+    const lock = () => {
+      this.map.setMinZoom(this.map.getBoundsZoom(bounds, true));
+      this.map.panInsideBounds(bounds, { animate: false });
+    };
+    lock();
+    this.map.on("resize", lock);
     L.tileLayer(TILE_URL, { attribution: ATTRIBUTION, maxZoom: 19 }).addTo(this.map);
     this.pins.addTo(this.map);
     L.control
@@ -41,7 +48,7 @@ export class GraeballsMap {
   setSightings(list: Sighting[], now: number) {
     this.pins.clearLayers();
     list.forEach((s, i) => {
-      const m = L.marker([s.lat, s.lng], { icon: pinIcon(now - s.created_at, i === 0) });
+      const m = L.marker([s.lat, s.lng], { icon: pinIcon(now - s.spotted_at, i === 0) });
       m.bindPopup(popupContent(s, now));
       this.pins.addLayer(m);
     });
@@ -94,7 +101,7 @@ function popupContent(s: Sighting, now: number): HTMLElement {
   if (s.place_name) box.append(row("Near: ", s.place_name));
   if (s.note) box.append(row("", `“${s.note}”`));
   if (s.nickname) box.append(row("Spotted by: ", s.nickname));
-  const t = row("", `${ago(now - s.created_at)} (${londonTime(s.created_at)})`);
+  const t = row("", `${ago(now - s.spotted_at)} (${londonTime(s.spotted_at)})`);
   t.style.color = "#666";
   box.append(t);
   return box;

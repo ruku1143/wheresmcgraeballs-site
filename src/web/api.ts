@@ -8,7 +8,7 @@ export interface Sighting {
   activity: string;
   note: string | null;
   nickname: string | null;
-  created_at: number;
+  spotted_at: number;
 }
 export interface NewSighting {
   lat: number;
@@ -17,6 +17,8 @@ export interface NewSighting {
   place_name?: string;
   note?: string;
   nickname?: string;
+  /** Unix seconds; omitted means "now". */
+  spotted_at?: number;
   turnstileToken: string;
 }
 

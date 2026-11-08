@@ -16,3 +16,5 @@ INSERT INTO sightings (lat, lng, place_name, activity, note, nickname, created_a
  (51.2630, -1.0900, 'Basing View', 'at the pub', NULL, 'Spotter Sam', CAST(strftime('%s','now') AS INTEGER) - 500000, 'seed'),
  (51.2675, -1.0880, 'Market Square', 'vibing', 'Vibes immaculate', 'Dazza', CAST(strftime('%s','now') AS INTEGER) - 550000, 'seed'),
  (51.2590, -1.0700, 'Black Dam', 'lost', NULL, NULL, CAST(strftime('%s','now') AS INTEGER) - 600000, 'seed');
+
+UPDATE sightings SET spotted_at = created_at WHERE ip_hash = 'seed';

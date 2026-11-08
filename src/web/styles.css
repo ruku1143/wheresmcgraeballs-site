@@ -201,6 +201,15 @@ footer {
   color: var(--muted);
   background: var(--card);
   border-top: 1px solid var(--line);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+.version {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
 }
 footer p {
   margin: 2px 0;

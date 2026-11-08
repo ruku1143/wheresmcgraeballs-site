@@ -61,6 +61,38 @@ describe("POST /api/sightings", () => {
   });
 });
 
+describe("spotted_at", () => {
+  const now = () => Math.floor(Date.now() / 1000);
+
+  it("stores a past spotted time and orders by it", async () => {
+    expect((await post({ spotted_at: now() - 7200, note: "older" })).status).toBe(201);
+    expect((await post({ spotted_at: now() - 60, note: "newer" })).status).toBe(201);
+    expect((await post({ spotted_at: now() - 86400, note: "oldest" })).status).toBe(201);
+    const list = (await (await call("/api/sightings?x=order")).json()) as {
+      sightings: { note: string }[];
+    };
+    expect(list.sightings.map((s) => s.note)).toEqual(["newer", "older", "oldest"]);
+    const latest = (await (await call("/api/latest?x=order")).json()) as {
+      sighting: { note: string };
+      status: { key: string };
+    };
+    expect(latest.sighting.note).toBe("newer");
+    expect(latest.status.key).toBe("hot");
+  });
+
+  it("rejects a future spotted time", async () => {
+    const res = await post({ spotted_at: now() + 3600 });
+    expect(res.status).toBe(400);
+    expect(((await res.json()) as { error: string }).error).toMatch(/future/);
+  });
+
+  it("an old sighting does not make the banner hot", async () => {
+    await post({ spotted_at: now() - 3 * 86400 });
+    const latest = (await (await call("/api/latest?x=old")).json()) as { status: { key: string } };
+    expect(latest.status.key).toBe("cold");
+  });
+});
+
 describe("reads and admin", () => {
   it("hides and unhides sightings everywhere", async () => {
     const created = (await (await post({ nickname: "Ghost" })).json()) as {
