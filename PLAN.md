@@ -118,17 +118,20 @@ CREATE TABLE sightings (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   lat         REAL    NOT NULL,
   lng         REAL    NOT NULL,
-  place_name  TEXT,                    -- optional, user supplied, max 60 chars
+  place_name  TEXT,                    -- road and area, looked up server-side from the pin (max 60 chars)
   activity    TEXT    NOT NULL,        -- one of the fixed enum values below
   note        TEXT,                    -- optional, max 140 chars
   nickname    TEXT,                    -- optional spotter name, max 24 chars
-  created_at  INTEGER NOT NULL,        -- unix seconds, UTC
+  created_at  INTEGER NOT NULL,        -- unix seconds, UTC, insert time (rate limiting)
   ip_hash     TEXT    NOT NULL,        -- salted SHA-256, never raw IP
-  hidden      INTEGER NOT NULL DEFAULT 0
+  hidden      INTEGER NOT NULL DEFAULT 0,
+  spotted_at  INTEGER NOT NULL DEFAULT 0 -- when it happened (user supplied, never in the future)
 );
-CREATE INDEX idx_sightings_visible_time ON sightings (hidden, created_at DESC);
-CREATE INDEX idx_sightings_nickname     ON sightings (nickname) WHERE hidden = 0;
-CREATE INDEX idx_sightings_ip_time      ON sightings (ip_hash, created_at);
+-- Current indexes, after migrations/0003_index_cleanup.sql:
+CREATE INDEX idx_sightings_visible_spotted ON sightings (hidden, spotted_at DESC);
+CREATE INDEX idx_sightings_nickname_nocase ON sightings (nickname COLLATE NOCASE)
+  WHERE hidden = 0 AND nickname IS NOT NULL;
+CREATE INDEX idx_sightings_ip_time         ON sightings (ip_hash, created_at);
 ```
 
 **Activity enum** (dropdown, validated server-side, easy to extend):
@@ -276,7 +279,7 @@ Alternative: Cloudflare **Workers Builds** (connect the repo in the dashboard). 
 ## 9. Testing
 
 - Unit tests (Vitest): status calculation, bbox validation, input sanitising, rate-limit logic.
-- Worker integration tests with `@cloudflare/vitest-pool-workers` against a local D1: POST happy path, bad Turnstile, out-of-bounds pin, rate limit hit, hidden sightings excluded from reads.
+- Worker integration tests with `@cloudflare/vitest-plugin` against a local D1: POST happy path, bad Turnstile, out-of-bounds pin, rate limit hit, hidden sightings excluded from reads.
 - Manual check on a real phone: add a pin, geolocation prompt, form usability, banner updating.
 
 ## 10. Build order for Claude Code

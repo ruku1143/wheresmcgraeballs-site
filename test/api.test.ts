@@ -242,6 +242,22 @@ describe("live updates", () => {
   });
 });
 
+describe("leaderboard", () => {
+  it("counts nicknames case-insensitively", async () => {
+    await post({ nickname: "Tester" }, "1.1.1.1");
+    await post({ nickname: "tester" }, "2.2.2.2");
+    await post({ nickname: "TESTER" }, "3.3.3.3");
+    await post({ nickname: "Other" }, "4.4.4.4");
+    const { leaderboard } = (await (await call("/api/leaderboard")).json()) as {
+      leaderboard: { nickname: string; sightings: number }[];
+    };
+    expect(leaderboard).toEqual([
+      { nickname: "TESTER", sightings: 3 },
+      { nickname: "Other", sightings: 1 },
+    ]);
+  });
+});
+
 describe("reads and admin", () => {
   it("hides and unhides sightings everywhere", async () => {
     const created = (await (await post({ nickname: "Ghost" })).json()) as {

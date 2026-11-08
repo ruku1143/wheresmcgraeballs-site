@@ -12,7 +12,16 @@ export interface SightingInput {
 }
 
 const CONTROL = /[\u0000-\u001f\u007f-\u009f]/g;
-const BLOCKED = ["fuck", "shit", "cunt", "nigger", "paedo", "kill yourself"];
+/**
+ * Blocked words match at the start of a word, so "fucking" is caught but "Scunthorpe" is not.
+ * Common compounds where the word sits mid-word are listed separately.
+ */
+const BLOCKED_STEMS = ["fuck", "shit", "cunt", "nigger", "paedo", "kill yourself"];
+const BLOCKED_COMPOUNDS = ["motherfuck", "bullshit", "dipshit", "horseshit", "batshit", "apeshit"];
+const BLOCKED = new RegExp(
+  `(?<![\\p{L}\\p{N}])(?:${BLOCKED_STEMS.join("|")})|${BLOCKED_COMPOUNDS.join("|")}`,
+  "iu",
+);
 
 export function clean(v: unknown, max: number): string | null {
   if (typeof v !== "string") return null;
@@ -21,9 +30,7 @@ export function clean(v: unknown, max: number): string | null {
 }
 
 export function containsBlocked(s: string | null): boolean {
-  if (!s) return false;
-  const l = s.toLowerCase();
-  return BLOCKED.some((w) => l.includes(w));
+  return !!s && BLOCKED.test(s);
 }
 
 export function validateSighting(

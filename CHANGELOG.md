@@ -2,9 +2,13 @@
 
 Versions follow [semver](https://semver.org). The current version lives in `package.json` and is shown bottom-right on the site. See `CLAUDE.md` for the bump rules.
 
-## 0.4.2
+## 0.5.0
 
-Code review clean-up. No visible changes except the Escape-key fix.
+Code review clean-up. Adds migration `0003_index_cleanup.sql`: apply it to `graeballs-db` and `graeballs-db-preview` when this ships.
+
+- The leaderboard now counts nicknames case-insensitively, so "Tester", "tester" and "TESTER" are one spotter. Migration `0003` swaps the nickname index for a case-insensitive one and drops the unused `created_at` index, which saves a write on every insert.
+- The swear-word filter matches at the start of a word, so place names like "Scunthorpe" are no longer blocked. "fucking" and "shitting" are still caught, and so are common compounds like "motherfucker" and "bullshit".
+- Tests now use `@cloudflare/vitest-plugin`, the renamed `@cloudflare/vitest-pool-workers`. It uses the project's own wrangler, which clears the "unexpected field `issues`" and outdated-wrangler warnings.
 
 - Fix: the edge cache for API reads is now keyed on each route's canonical URL, so junk query strings (`?x=1`, `?x=2`, ...) can no longer skip the cache and run up D1 reads. `/api/sightings`, `?limit=200` and `?limit=junk` now share one cache entry.
 - Fix: closing the sighting form with Escape now removes the temporary pin (before, only Cancel did).

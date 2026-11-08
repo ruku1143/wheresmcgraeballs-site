@@ -42,9 +42,11 @@ export async function latestSighting(db: D1Database, now: number) {
 export async function leaderboard(db: D1Database) {
   const { results } = await db
     .prepare(
-      `SELECT nickname, COUNT(*) AS sightings FROM sightings
+      // "Tester" and "tester" are one spotter (ASCII case only, like SQLite's NOCASE).
+      // MIN() picks a stable spelling to show. Uses idx_sightings_nickname_nocase.
+      `SELECT MIN(nickname) AS nickname, COUNT(*) AS sightings FROM sightings
        WHERE hidden = 0 AND nickname IS NOT NULL
-       GROUP BY nickname ORDER BY sightings DESC LIMIT 10`,
+       GROUP BY nickname COLLATE NOCASE ORDER BY sightings DESC, nickname LIMIT 10`,
     )
     .all();
   return { leaderboard: results };
