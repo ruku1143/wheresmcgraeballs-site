@@ -15,7 +15,7 @@
     "deploy": "npm run build && wrangler deploy"
   },
   "dependencies": {
-    "hono": "^4.13.17",
+    "hono": "^4.13.18",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0"
   },
